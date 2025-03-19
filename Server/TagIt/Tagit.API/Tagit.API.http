@@ -1,6 +1,0 @@
-@Tagit.API_HostAddress = http://localhost:5118
-
-GET {{Tagit.API_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###
