@@ -1,0 +1,154 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using Tagit.Core.DTOs;
+using Tagit.Core.Repositories;
+using Tagit.Core.Services;
+using Tagit.Core.Entities;
+using File = Tagit.Core.Entities.File;
+using AutoMapper;
+using Amazon.S3;
+using Amazon.S3.Model;
+using Microsoft.AspNetCore.StaticFiles;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+
+namespace Tagit.Service.Services
+{
+    public class FileService : IFileService
+    {
+        private readonly IFileRepository _fileRepository;
+        private readonly IAmazonS3 _s3Client;
+        private readonly IMapper _mapper;
+        private readonly ILogger<FileService> _logger;
+        public FileService(IFileRepository fileRepository, IAmazonS3 s3Client, IMapper mapper,ILogger<FileService> logger)
+        {
+            _fileRepository = fileRepository;
+            _s3Client = s3Client;
+            _mapper = mapper;
+            _logger = logger;
+        }
+
+        // Generate a presigned URL for uploading the file to S3
+        public async Task<string> GetPresignedUrlAsync(string fileName, string folderPath)
+        {
+            try
+            {
+                var fileKey = $"{folderPath.TrimEnd('/')}/{fileName}".TrimStart('/');
+
+                var request = new GetPreSignedUrlRequest
+                {
+                    BucketName = "tagitbucket", // שם ה-Bucket שלך
+                    Key = fileKey,
+                    Verb = HttpVerb.PUT,
+                    Expires = DateTime.UtcNow.AddMinutes(300), // הגדל את הזמן
+                    ContentType = GetContentType(fileName) // התאם את סוג הקובץ בהתאם לצורך
+                };
+
+                string presignedUrl = _s3Client.GetPreSignedURL(request);
+                return await Task.FromResult(presignedUrl);
+            }
+            catch (AmazonS3Exception ex)
+            {
+                Console.WriteLine($"Amazon S3 error generating pre-signed URL: {ex.Message}");
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error generating pre-signed URL: {ex.Message}");
+                throw;
+            }
+        }
+
+        public async Task<string> GeneratePresignedDownloadUrl(string key)
+        {
+            var request = new GetPreSignedUrlRequest
+            {
+                BucketName = "tagitbucket",
+                Key = key,
+                Expires = DateTime.UtcNow.AddMinutes(15), // תוקף הקישור
+                ResponseHeaderOverrides = new ResponseHeaderOverrides
+                {
+                    ContentDisposition = "attachment; filename=\"" + key + "\""
+                }
+            };
+
+            var url = _s3Client.GetPreSignedURL(request);
+            return await Task.FromResult(url);
+        }
+
+        public async Task<string> GetPresignedUrlForView(string key)
+        {
+            var request = new GetPreSignedUrlRequest
+            {
+                BucketName = "tagitbucket",
+                Key = key,
+                Expires = DateTime.UtcNow.AddMinutes(15)
+            };
+
+            return await Task.FromResult(_s3Client.GetPreSignedURL(request));
+        }
+        // Add file metadata to the database
+        public async Task<FileDTO> AddFileAsync(FileDTO file)
+        {
+            var uploadedFile = await _fileRepository.AddFileAsync(_mapper.Map<File>(file));
+            return _mapper.Map<FileDTO>(uploadedFile);
+        }
+
+        // Retrieve a file by its ID
+        public async Task<FileDTO> GetFileByIdAsync(int fileId)
+        {
+            return _mapper.Map<FileDTO>(await _fileRepository.GetFileByIdAsync(fileId));
+        }
+
+        // Update file metadata (e.g., after a soft delete)
+        public async Task<FileDTO> UpdateFileAsync(FileDTO file)
+        {
+            var updatedFile = await _fileRepository.UpdateFileAsync(_mapper.Map<File>(file));
+            return _mapper.Map<FileDTO>(updatedFile);
+        }
+
+        public async Task<bool> MarkFileAsDeletedAsync(int fileId)
+        {
+            try
+            {
+                var file = await _fileRepository.GetFileByIdAsync(fileId);
+                if (file == null)
+                {
+                    _logger.LogWarning($"File with ID {fileId} not found or already deleted.");
+                    return false; // File not found or already deleted
+                }
+
+                file.IsDeleted = true;
+                await _fileRepository.UpdateFileAsync(file);
+
+                _logger.LogInformation($"File with ID {fileId} has been successfully marked as deleted.");
+                return true; // Successfully marked as deleted
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting file");
+                return false; // Error during deletion
+            }
+        }
+
+        public async Task<List<FileDTO>> GetAllFilesByUserIdAsync(int userId)
+        {
+            var files = await _fileRepository.GetAllFilesByUserIdAsync(userId);
+            return _mapper.Map<List<FileDTO>>(files);
+        }
+
+        private string GetContentType(string fileName)
+        {
+            var provider = new FileExtensionContentTypeProvider();
+            if (!provider.TryGetContentType(fileName, out var contentType))
+            {
+                contentType = "application/pdf"; // Default if unknown
+            }
+            return contentType;
+        }
+
+    }
+}

@@ -1,0 +1,275 @@
+@import "tailwindcss";
+
+@plugin "tailwindcss-animate";
+
+@custom-variant dark (&:is(.dark *));
+/* Custom styles and configurations */
+:root {
+  --background: 210 40% 98%;
+  --foreground: 210 40% 20%;
+
+  --card: 0 0% 100%;
+  --card-foreground: 210 40% 20%;
+
+  --popover: 0 0% 100%;
+  --popover-foreground: 210 40% 20%;
+
+  --primary: 152 70% 76%;
+  --primary-foreground: 210 40% 20%;
+
+  --secondary: 210 33% 98%;
+  --secondary-foreground: 210 40% 20%;
+
+  --muted: 210 20% 92%;
+  --muted-foreground: 210 20% 45%;
+
+  --accent: 152 60% 85%;
+  --accent-foreground: 210 40% 20%;
+
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+
+  --border: 214.3 31.8% 85%;
+  --input: 214.3 31.8% 85%;
+  --ring: 152 70% 65%;
+
+  --radius: 0.75rem;
+
+  --sidebar-background: 210 35% 41%;
+  --sidebar-foreground: 152 70% 76%;
+  --sidebar-primary: 152 70% 76%;
+  --sidebar-primary-foreground: 210 35% 41%;
+  --sidebar-accent: 210 35% 46%;
+  --sidebar-accent-foreground: 152 70% 76%;
+  --sidebar-border: 210 35% 46%;
+  --sidebar-ring: 152 70% 76%;
+}
+
+/* Dark Mode Variables */
+.dark {
+  --background: 222.2 84% 4.9%;
+  --foreground: 210 40% 98%;
+
+  --card: 222.2 84% 4.9%;
+  --card-foreground: 210 40% 98%;
+
+  --popover: 222.2 84% 4.9%;
+  --popover-foreground: 210 40% 98%;
+
+  --primary: 210 40% 98%;
+  --primary-foreground: 222.2 47.4% 11.2%;
+
+  --secondary: 217.2 32.6% 17.5%;
+  --secondary-foreground: 210 40% 98%;
+
+  --muted: 217.2 32.6% 17.5%;
+  --muted-foreground: 215 20.2% 65.1%;
+
+  --accent: 217.2 32.6% 17.5%;
+  --accent-foreground: 210 40% 98%;
+
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 210 40% 98%;
+
+  --border: 217.2 32.6% 17.5%;
+  --input: 217.2 32.6% 17.5%;
+  --ring: 212.7 26.8% 83.9%;
+
+  --sidebar-background: 240 5.9% 10%;
+  --sidebar-foreground: 240 4.8% 95.9%;
+  --sidebar-primary: 224.3 76.3% 48%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 240 3.7% 15.9%;
+  --sidebar-accent-foreground: 240 4.8% 95.9%;
+  --sidebar-border: 240 3.7% 15.9%;
+  --sidebar-ring: 217.2 91.2% 59.8%;
+}
+
+/* Base Styles */
+body {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-family: 'Garamond', serif; /* Replace with your preferred font */
+  font-feature-settings: "ss01", "ss02", "cv01", "cv02", "cv03";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  scroll-behavior: smooth;
+}
+
+/* Utility Styles */
+* {
+  border-color: hsl(var(--border));
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 300ms;
+}
+
+/* Animations */
+@keyframes accordion-down {
+  from {
+    height: 0;
+  }
+  to {
+    height: var(--radix-accordion-content-height);
+  }
+}
+
+@keyframes accordion-up {
+  from {
+    height: var(--radix-accordion-content-height);
+  }
+  to {
+    height: 0;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Glass Component Styles */
+.glass {
+  background-color: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  border-radius: var(--radius);
+}
+
+.glass-dark {
+  background-color: rgba(77, 106, 132, 0.5);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  border-radius: var(--radius);
+}
+
+/* Input Styles */
+.tagit-input {
+  display: block;
+  width: 100%;
+  border-radius: var(--radius);
+  border: 1px solid hsl(var(--input));
+  background-color: hsl(var(--background));
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  color: hsl(var(--foreground));
+  outline: none;
+  transition: box-shadow 0.3s ease;
+}
+
+.tagit-input:focus-visible {
+  box-shadow: 0 0 0 2px hsl(var(--ring));
+}
+
+/* Button Glow Effect */
+.button-glow {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius);
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.button-glow::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to right, #a8ebc7, #cff6e3);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.button-glow:hover::before {
+  opacity: 1;
+}
+
+/* Additional Components */
+.page-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  animation: fade-in 0.3s ease-in-out;
+}
+
+.section-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #3a5269;
+  margin-bottom: 1.5rem;
+}
+
+.breadcrumb-item {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.875rem;
+  color: hsl(var(--muted-foreground));
+  transition: color 0.3s ease;
+}
+
+.breadcrumb-item:hover {
+  color: hsl(var(--foreground));
+}
+
+.tag-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  background-color: rgba(168, 235, 199, 0.3);
+  color: #3a5269;
+}
+
+.folder-card {
+  position: relative;
+  padding: 1.25rem;
+  border-radius: var(--radius);
+  border: 1px solid hsl(var(--border));
+  background-color: #ffffff;
+  transition: all 0.3s ease;
+}
+
+.folder-card:hover {
+  border-color: rgba(168, 235, 199, 0.5);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.folder-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  color: #4d6a84;
+  margin-bottom: 0.75rem;
+}
+
+.card-hover {
+  transition: all 0.3s ease;
+}
+
+.card-hover:hover {
+  transform: translateY(-0.3125rem);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
