@@ -1,22 +1,35 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { ChevronRight, Home, FolderOpen } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import React from "react"
+import { Link } from "react-router-dom"
+import { ChevronRight, Home, FolderOpen } from "lucide-react"
+import { cn } from "@/lib/utils"
+
+// Embedding tailwind config directly
+const tailwindConfig = {
+  theme: {
+    extend: {
+      colors: {
+        tagit: {
+          blue: "#4d6a84",
+          darkblue: "#3a5269",
+          mint: "#a8ebc7",
+          lightmint: "#cff6e3",
+        },
+      },
+    },
+  },
+}
 
 interface BreadcrumbItem {
-  name: string;
-  path: string;
+  name: string
+  path: string
 }
 
 interface FileBreadcrumbProps {
-  items: BreadcrumbItem[];
-  className?: string;
+  items: BreadcrumbItem[]
+  className?: string
 }
 
-const FileBreadcrumb: React.FC<FileBreadcrumbProps> = ({
-  items,
-  className,
-}) => {
+const FileBreadcrumb: React.FC<FileBreadcrumbProps> = ({ items, className }) => {
   return (
     <nav className={cn("flex", className)}>
       <ol className="flex items-center space-x-1 overflow-x-auto py-1 scrollbar-none">
@@ -26,7 +39,7 @@ const FileBreadcrumb: React.FC<FileBreadcrumbProps> = ({
             <span>Home</span>
           </Link>
         </li>
-        
+
         {items.map((item, index) => (
           <React.Fragment key={index}>
             <li className="flex items-center">
@@ -49,7 +62,7 @@ const FileBreadcrumb: React.FC<FileBreadcrumbProps> = ({
         ))}
       </ol>
     </nav>
-  );
-};
+  )
+}
 
-export default FileBreadcrumb;
+export default FileBreadcrumb

@@ -72,10 +72,13 @@ namespace Tagit.Service.Services
             }
 
             // עדכון שדות משתמש
-            existingUser.FirstName = user.FirstName;
-            existingUser.LastName = user.LastName;
-            existingUser.Role = user.Role;
-            if (!string.IsNullOrEmpty(user.Password)) 
+            if(user.FirstName != default)
+                existingUser.FirstName = user.FirstName;
+            if(user.LastName != default)
+                existingUser.LastName = user.LastName;
+            if(user.Role != default)
+                existingUser.Role = user.Role;
+            if (!string.IsNullOrEmpty(user.Password) && user.Password != default) 
             {
                 existingUser.PasswordHash = user.Password;
                 // Hash של הסיסמה החדשה אם סופקה

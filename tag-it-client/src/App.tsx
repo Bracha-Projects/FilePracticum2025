@@ -11,26 +11,34 @@ import DashboardPage from "./pages/DashboardPage";
 import FilesPage from "./pages/FilesPage";
 import FileUploadPage from "./pages/FileUploadPage";
 import ProfilePage from "./pages/ProfilePage";
+import store from './redux/store';
+import { Provider } from "react-redux";
+import SettingsPage from './pages/SettingPage';
+import UnderConstructionPage from './pages/UnderConstructionPage';
 function App() {
 
   return (
     <>
-      <TooltipProvider>
-        <Toaster richColors position="top-right" />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/about" element={<AboutPage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
-            <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/files" element={<FilesPage />} />
-            <Route path="/upload" element={<FileUploadPage />} />
-            <Route path="/profile" element={<ProfilePage />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
+      <Provider store={store}>
+        <TooltipProvider>
+          <Toaster richColors position="top-right" />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/about" element={<AboutPage />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/register" element={<RegisterPage />} />
+              <Route path="/dashboard" element={<DashboardPage />} />
+              <Route path="/files" element={<FilesPage />} />
+              <Route path="/upload" element={<FileUploadPage />} />
+              <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/underConstruction" element={<UnderConstructionPage />} />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </Provider>
     </>
   )
 }
