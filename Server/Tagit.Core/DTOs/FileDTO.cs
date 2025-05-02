@@ -13,6 +13,9 @@ namespace Tagit.Core.DTOs
         public string FileType { get; set; }
         public string S3Key { get; set; }
         public int OwnerId { get; set; }
+        public DateTime LastModified { get; set; } 
+        public DateTime DateCreated { get; set; } 
+        public long Size { get; set; } 
         public List<string> Tags { get; set; }
     }
 }

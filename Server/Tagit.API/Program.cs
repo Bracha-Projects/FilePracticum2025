@@ -1,4 +1,5 @@
 using Amazon.S3;
+using DotEnv.Core;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -14,7 +15,10 @@ using Tagit.Data;
 using Tagit.Data.Repositories;
 using Tagit.Service.Services;
 var builder = WebApplication.CreateBuilder(args);
-
+if (builder.Environment.IsDevelopment())
+{
+    new EnvLoader().Load();
+}
 // Add services to the container.
 builder.Services.AddJwtAuthentication(builder.Configuration); // Use the middleware
 
@@ -53,8 +57,16 @@ builder.Services.AddScoped<ITagService, TagService>();
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IFolderService, FolderService>();
 //Add dependencies to DataContext
+var host = Environment.GetEnvironmentVariable("MYSQL_HOST");
+var databaseName = Environment.GetEnvironmentVariable("MYSQL_DATABASE");
+var user = Environment.GetEnvironmentVariable("MYSQL_USER");
+var password = Environment.GetEnvironmentVariable("MYSQL_PASSWORD");
+var port = Environment.GetEnvironmentVariable("MYSQL_PORT") ?? "3306";
+
+var connectionString = $"Server={host};Port={port};Database={databaseName};Uid={user};Pwd={password};";
+
 builder.Services.AddDbContext<TagitDBContext>(options =>
-        options.UseSqlServer(@"Server=(localdb)\MSSQLLocalDB;Database=practicum"));
+    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
 
 builder.Services.AddAutoMapper(typeof(MappingProfile));
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();

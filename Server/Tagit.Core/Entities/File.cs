@@ -15,8 +15,8 @@ namespace Tagit.Core.Entities
         public string S3Key { get; set; } // מזהה הקובץ ב-S3 (לדוג' uploads/user1/file.jpg)
         public int? FolderId { get; set; } // תיקיית היעד (null אם לא משויך לתיקיה)
         public int OwnerId { get; set; } // בעל הקובץ
-        public DateTime CreatedAt { get; set; } // תאריך העלאה
-        public DateTime UpdatedAt { get; set; } // תאריך עדכון אחרון
+        public DateTime LastModified { get; set; } // To track when the file was last modified
+        public DateTime DateCreated { get; set; } // To track when the file was originally created
         public bool IsDeleted { get; set; } // דגל למחיקה רכה
 
         // connections
