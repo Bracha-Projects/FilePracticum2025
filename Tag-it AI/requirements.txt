@@ -1,0 +1,8 @@
+flask
+flask-cors
+openai==1.17.0
+python-dotenv
+httpx
+langdetect
+PyPDF2
+python-docx

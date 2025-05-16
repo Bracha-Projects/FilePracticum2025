@@ -11,10 +11,10 @@ import DashboardPage from "./pages/DashboardPage";
 import FilesPage from "./pages/FilesPage";
 import FileUploadPage from "./pages/FileUploadPage";
 import ProfilePage from "./pages/ProfilePage";
-import store from './redux/store';
 import { Provider } from "react-redux";
 import SettingsPage from './pages/SettingPage';
 import UnderConstructionPage from './pages/UnderConstructionPage';
+import { store } from './redux/store';
 function App() {
 
   return (

@@ -15,6 +15,7 @@ using Tagit.Data;
 using Tagit.Data.Repositories;
 using Tagit.Service.Services;
 var builder = WebApplication.CreateBuilder(args);
+Console.WriteLine($"Environment: {builder.Environment.EnvironmentName}");
 if (builder.Environment.IsDevelopment())
 {
     new EnvLoader().Load();
@@ -64,9 +65,10 @@ var password = Environment.GetEnvironmentVariable("MYSQL_PASSWORD");
 var port = Environment.GetEnvironmentVariable("MYSQL_PORT") ?? "3306";
 
 var connectionString = $"Server={host};Port={port};Database={databaseName};Uid={user};Pwd={password};";
-
+Console.WriteLine(connectionString);
 builder.Services.AddDbContext<TagitDBContext>(options =>
     options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
+
 
 builder.Services.AddAutoMapper(typeof(MappingProfile));
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
@@ -80,6 +82,11 @@ builder.Services.AddCors(options =>
     });
 });
 var app = builder.Build();
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<TagitDBContext>();
+    db.Database.Migrate();
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

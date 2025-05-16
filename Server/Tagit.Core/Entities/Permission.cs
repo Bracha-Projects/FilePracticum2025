@@ -11,7 +11,9 @@ namespace Tagit.Core.Entities
     {
         [Key]
         public int PermissionId { get; set; }
+        [MaxLength(255)]
         public string PermissionName { get; set; }
+        [MaxLength(255)]
         public string Description { get; set; }
         public List<Role> Roles { get; set; } = new List<Role>();
 

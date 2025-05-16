@@ -11,7 +11,9 @@ namespace Tagit.Core.Entities
     {
         [Key]
         public int RoleId { get; set; }
+        [MaxLength(255)]
         public string RoleName { get; set; }
+        [MaxLength(255)]
         public string Description { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }

@@ -40,32 +40,32 @@ const tailwindConfig = {
 }
 
 // Example data for recent files
-const recentFiles = [
-  {
-    id: "1",
-    name: "Q4-2023-Financial-Report.pdf",
-    type: "PDF",
-    size: "2.3 MB",
-    tags: ["financial", "report", "quarterly"],
-    lastModified: "2 days ago",
-  },
-  {
-    id: "2",
-    name: "Marketing-Strategy-2024.docx",
-    type: "DOCX",
-    size: "845 KB",
-    tags: ["marketing", "strategy", "planning"],
-    lastModified: "1 week ago",
-  },
-  {
-    id: "3",
-    name: "Client-Contract-ABC-Corp.pdf",
-    type: "PDF",
-    size: "1.2 MB",
-    tags: ["contract", "legal", "client"],
-    lastModified: "3 days ago",
-  },
-]
+// const recentFiles:FileItem[] = [
+//   {
+//     id: 1,
+//     fileName: "Q4-2023-Financial-Report.pdf",
+//     fileType: "PDF",
+//     size: "2.3 MB",
+//     tags: ["financial", "report", "quarterly"],
+//     lastModified: "2 days ago",
+//   },
+//   {
+//     id: 2,
+//     fileName: "Marketing-Strategy-2024.docx",
+//     fileType: "DOCX",
+//     size: "845 KB",
+//     tags: ["marketing", "strategy", "planning"],
+//     lastModified: "1 week ago",
+//   },
+//   {
+//     id: 3,
+//     fileName: "Client-Contract-ABC-Corp.pdf",
+//     fileType: "PDF",
+//     size: "1.2 MB",
+//     tags: ["contract", "legal", "client"],
+//     lastModified: "3 days ago",
+//   },
+// ]
 
 // Stats data
 const statsData = [
@@ -181,9 +181,9 @@ const DashboardPage = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {recentFiles.map((file) => (
+                {/* {recentFiles.map((file) => (
                   <FileCard key={file.id} {...file} className="animate-fade-in" />
-                ))}
+                ))} */}
               </div>
             </CardContent>
           </Card>

@@ -15,7 +15,7 @@ namespace Tagit.Data
         public DbSet<Tag> Tags { get; set; }
         public DbSet<Log> Logs { get; set; }
         public DbSet<Role> Roles { get; set; }
-        public DbSet<Permission> Permissions { get; set; }
+        public Microsoft.EntityFrameworkCore.DbSet<Permission> Permissions { get; set; }
         public DbSet<Folder> Folders { get; set; }
         public TagitDBContext(DbContextOptions<TagitDBContext> options) : base(options)
         {

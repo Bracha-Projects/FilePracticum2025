@@ -8,22 +8,22 @@ const initialState: AuthResponse = {
   token: "",
 };
 
-// Create the user slice
 const userSlice = createSlice({
   name: "user",
   initialState,
-  reducers: {
-    setUser(state, action: PayloadAction<{ user: User; token: string }>) {
+  reducers:{
+    setUser(state, action:PayloadAction<{user:User;token:string}>)
+    {
       state.user = action.payload.user;
       state.token = action.payload.token;
     },
-    clearUser(state) {
+    clearUser(state)
+    {
       state.user = {} as User;
       state.token = "";
-    },
-  },
-});
-
+    }
+  }
+})
 // Export actions and reducer
 export const { setUser, clearUser } = userSlice.actions;
 export default userSlice.reducer;
