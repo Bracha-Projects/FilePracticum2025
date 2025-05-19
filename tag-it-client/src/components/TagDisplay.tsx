@@ -4,13 +4,25 @@ interface TagDisplayProps {
   tags: string[]
   maxDisplay?: number
   className?: string
+  onTagsChange?: (newTags: string[]) => void // נוספה תמיכה בפרופס הזה
 }
 
-const TagDisplay: React.FC<TagDisplayProps> = ({ tags, maxDisplay = 3, className = "" }) => {
+const TagDisplay: React.FC<TagDisplayProps> = ({
+  tags,
+  maxDisplay = 3,
+  className = "",
+  onTagsChange, // נוספה כאן קבלה של הפונקציה
+}) => {
   if (!tags || tags.length === 0) return null
 
   const displayTags = tags.slice(0, maxDisplay)
   const remainingCount = tags.length - maxDisplay
+
+  // אם בעתיד תוסיפי תמיכה באירועים, תוכלי להשתמש ב־onTagsChange כך:
+  const handleRemoveTag = (tagToRemove: string) => {
+    const newTags = tags.filter(tag => tag !== tagToRemove)
+    onTagsChange?.(newTags)
+  }
 
   return (
     <div className={`flex flex-wrap gap-1 ${className}`}>

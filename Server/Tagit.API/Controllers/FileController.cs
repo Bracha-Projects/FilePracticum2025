@@ -28,6 +28,7 @@ namespace Tagit.Controllers
         private readonly ILogger<FileController> _logger;
         private readonly IConfiguration _configuration;
         private readonly IMapper _mapper;
+
         public FileController(IConfiguration configuration, IFileService fileService, IFolderService folderService, ILogger<FileController> logger, IMapper mapper)
         {
             _configuration = configuration;
@@ -35,6 +36,12 @@ namespace Tagit.Controllers
             _folderService = folderService;
             _logger = logger;
             _mapper = mapper;
+        }
+
+        private int? GetUserId()
+        {
+            var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            return int.TryParse(userIdStr, out int userId) ? userId : (int?)null;
         }
 
         [HttpGet("presigned-url")]
@@ -45,6 +52,7 @@ namespace Tagit.Controllers
                 string folderPath = "";
                 if (folderId != null)
                     folderPath = await _folderService.GetFolderPathByIdAsync(folderId.Value);
+
                 var presignedUrl = await _fileService.GetPresignedUrlAsync(fileName, folderPath);
                 return Ok(new { Url = presignedUrl });
             }
@@ -55,23 +63,31 @@ namespace Tagit.Controllers
             }
         }
 
-        [HttpGet("files/{id}/download-url")]
+        [HttpGet("{id}/download-url")]
         public async Task<IActionResult> GetDownloadUrl(int id)
         {
+            var userId = GetUserId();
+            if (userId == null)
+                return Unauthorized();
+
             var file = await _fileService.GetFileByIdAsync(id);
-            if (file == null)
-                return NotFound();
+            if (file == null || file.OwnerId != userId)
+                return Forbid();
 
             var url = _fileService.GeneratePresignedDownloadUrl(file.S3Key);
             return Ok(new { url });
         }
 
-        [HttpGet("files/{id}/viewing-url")]
+        [HttpGet("{id}/viewing-url")]
         public async Task<IActionResult> GetViewUrl(int id)
         {
+            var userId = GetUserId();
+            if (userId == null)
+                return Unauthorized();
+
             var file = await _fileService.GetFileByIdAsync(id);
-            if (file == null)
-                return NotFound();
+            if (file == null || file.OwnerId != userId)
+                return Forbid();
 
             var url = _fileService.GetPresignedUrlForView(file.S3Key);
             return Ok(new { url });
@@ -80,12 +96,17 @@ namespace Tagit.Controllers
         [HttpDelete("delete-file/{fileId}")]
         public async Task<IActionResult> DeleteFile(int fileId)
         {
-            var success = await _fileService.MarkFileAsDeletedAsync(fileId);
+            var userId = GetUserId();
+            if (userId == null)
+                return Unauthorized();
 
+            var file = await _fileService.GetFileByIdAsync(fileId);
+            if (file == null || file.OwnerId != userId)
+                return Forbid();
+
+            var success = await _fileService.MarkFileAsDeletedAsync(fileId);
             if (!success)
-            {
                 return NotFound(new { message = "File not found or already deleted." });
-            }
 
             return Ok(new { message = "File marked as deleted" });
         }
@@ -93,24 +114,28 @@ namespace Tagit.Controllers
         [HttpPost("add-file")]
         public async Task<IActionResult> AddFile([FromBody] FilePostModel file)
         {
+            var userId = GetUserId();
+            if (userId == null)
+                return Unauthorized();
+
             if (file == null || string.IsNullOrEmpty(file.S3Key))
-            {
-                return await Task.FromResult(BadRequest("Invalid file metadata."));
-            }
-            return Ok(await _fileService.AddFileAsync(_mapper.Map<FileDTO>(file)));
+                return BadRequest("Invalid file metadata.");
+
+            var fileDto = _mapper.Map<FileDTO>(file);
+            fileDto.OwnerId = userId.Value;
+
+            var result = await _fileService.AddFileAsync(fileDto);
+            return Ok(result);
         }
 
         [HttpGet("user-files")]
         public async Task<IActionResult> GetUserFiles()
         {
-            var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-            if (string.IsNullOrEmpty(userIdString) || !int.TryParse(userIdString, out int userId))
-            {
+            var userId = GetUserId();
+            if (userId == null)
                 return Unauthorized("User ID is not valid");
-            }
 
-            var files = await _fileService.GetAllFilesByUserIdAsync(userId);
+            var files = await _fileService.GetAllFilesByUserIdAsync(userId.Value);
             return Ok(files);
         }
     }

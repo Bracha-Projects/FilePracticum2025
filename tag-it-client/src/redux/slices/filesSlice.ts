@@ -19,15 +19,12 @@ const initialState: FilesState = {
   selectedFiles: [],
 }
 
-// API base URL - should be configured from environment variables in a real app
-// This should match your actual API endpoint
-const API_BASE_URL = "/api"
+const API_BASE_URL = "/api/files"
 
 // Async thunks for API calls
 export const fetchUserFiles = createAsyncThunk<FileItem[]>("files/fetchUserFiles", async (_, { rejectWithValue }) => {
   try {
-    // Update this endpoint to match your actual API endpoint
-    const response = await axiosInstance.get<FileItem[]>(`${API_BASE_URL}/files`)
+    const response = await axiosInstance.get<FileItem[]>(`${API_BASE_URL}/user-files`)
     console.log("API Response:", response.data)
     return response.data
   } catch (error: any) {
@@ -36,39 +33,10 @@ export const fetchUserFiles = createAsyncThunk<FileItem[]>("files/fetchUserFiles
   }
 })
 
-export const getFileDownloadUrl = createAsyncThunk<{ fileId: number; url: string }, number>(
-  "files/getFileDownloadUrl",
-  async (fileId: number, { rejectWithValue }) => {
-    try {
-      // Update this endpoint to match your actual API endpoint
-      const response = await axiosInstance.get<{ url: string }>(`${API_BASE_URL}/files/${fileId}/download`)
-      return { fileId, url: response.data.url }
-    } catch (error: any) {
-      console.error("Error getting download URL:", error)
-      return rejectWithValue(error.response?.data || error.message || "An unknown error occurred")
-    }
-  },
-)
-
-export const getFileViewUrl = createAsyncThunk<{ fileId: number; url: string }, number>(
-  "files/getFileViewUrl",
-  async (fileId: number, { rejectWithValue }) => {
-    try {
-      // Update this endpoint to match your actual API endpoint
-      const response = await axiosInstance.get<{ url: string }>(`${API_BASE_URL}/files/${fileId}/view`)
-      return { fileId, url: response.data.url }
-    } catch (error: any) {
-      console.error("Error getting view URL:", error)
-      return rejectWithValue(error.response?.data || error.message || "An unknown error occurred")
-    }
-  },
-)
-
 export const deleteFile = createAsyncThunk<number, number>(
   "files/deleteFile",
   async (fileId: number, { rejectWithValue }) => {
     try {
-      // Update this endpoint to match your actual API endpoint
       await axiosInstance.delete(`${API_BASE_URL}/files/${fileId}`)
       return fileId
     } catch (error: any) {
@@ -78,18 +46,14 @@ export const deleteFile = createAsyncThunk<number, number>(
   },
 )
 
-// Helper function to format file size
 export const formatFileSize = (bytes: number): string => {
   if (bytes === 0) return "0 Bytes"
-
   const k = 1024
   const sizes = ["Bytes", "KB", "MB", "GB", "TB"]
   const i = Math.floor(Math.log(bytes) / Math.log(k))
-
   return Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i]
 }
 
-// Create the file slice
 const fileSlice = createSlice({
   name: "files",
   initialState,
@@ -110,7 +74,7 @@ const fileSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-    // Handle fetchUserFiles
+    // fetchUserFiles
     builder.addCase(fetchUserFiles.pending, (state) => {
       state.loading = true
       state.error = null
@@ -124,25 +88,7 @@ const fileSlice = createSlice({
       state.error = (action.payload as string) || "Failed to fetch files"
     })
 
-    // Handle getFileDownloadUrl
-    builder.addCase(getFileDownloadUrl.fulfilled, (state, action: PayloadAction<{ fileId: number; url: string }>) => {
-      const { fileId, url } = action.payload
-      const fileIndex = state.files.findIndex((file) => file.id === fileId)
-      if (fileIndex !== -1) {
-        state.files[fileIndex].downloadUrl = url
-      }
-    })
-
-    // Handle getFileViewUrl
-    builder.addCase(getFileViewUrl.fulfilled, (state, action: PayloadAction<{ fileId: number; url: string }>) => {
-      const { fileId, url } = action.payload
-      const fileIndex = state.files.findIndex((file) => file.id === fileId)
-      if (fileIndex !== -1) {
-        state.files[fileIndex].viewUrl = url
-      }
-    })
-
-    // Handle deleteFile
+    // deleteFile
     builder.addCase(deleteFile.pending, (state, action) => {
       const fileId = action.meta.arg
       const fileIndex = state.files.findIndex((file) => file.id === fileId)
@@ -166,10 +112,8 @@ const fileSlice = createSlice({
   },
 })
 
-// Export actions and reducer
 export const { setCurrentFolder, toggleFileSelection, clearFileSelections } = fileSlice.actions
 
-// Export selectors
 export const selectFiles = (state: RootState) => state.files.files
 export const selectFileById = (state: RootState, fileId: number) => state.files.files.find((file) => file.id === fileId)
 export const selectFilesLoading = (state: RootState) => state.files.loading

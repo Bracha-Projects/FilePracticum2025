@@ -1,20 +1,18 @@
 import os
 import json
 import logging
-import requests
 from langdetect import detect
 from openai import OpenAI
 from dotenv import load_dotenv
 from PyPDF2 import PdfReader
 from docx import Document
 import httpx
-import time
 
 load_dotenv()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# יצירת HTTP client עם verify=False
+# יצירת HTTP client עם verify=False כדי להתגבר על בעיות SSL (לפי הצורך)
 http_client = httpx.Client(verify=False)
 
 # יצירת לקוח OpenAI עם HTTP client מותאם
@@ -37,15 +35,15 @@ def read_pdf(file_path):
 
 def read_docx(file_path):
     doc = Document(file_path)
-    text = "\n".join([para.text for para in doc.paragraphs])
-    return text
+    return "\n".join([para.text for para in doc.paragraphs])
 
-def read_file(file_path):
-    if file_path.endswith(".txt"):
+def extract_text_from_file(file_path):
+    ext = os.path.splitext(file_path)[1].lower()
+    if ext == ".txt":
         return read_txt(file_path)
-    elif file_path.endswith(".pdf"):
+    elif ext == ".pdf":
         return read_pdf(file_path)
-    elif file_path.endswith(".docx"):
+    elif ext == ".docx":
         return read_docx(file_path)
     else:
         logger.warning(f"Unsupported file type: {file_path}")
@@ -84,12 +82,13 @@ Return the tags in the same language as the document (detected language code: {l
         )
         tags_text = response.choices[0].message.content.strip()
 
+        # ניקוי תגובת JSON אם היא מגיעה בתוך בלוק קוד
         if tags_text.startswith("```json"):
             tags_text = tags_text[len("```json"):].strip()
         if tags_text.endswith("```"):
             tags_text = tags_text[:-3].strip()
 
-        print("Cleaned response:", tags_text)
+        logger.info(f"Cleaned response: {tags_text}")
         return json.loads(tags_text)
 
     except Exception as e:

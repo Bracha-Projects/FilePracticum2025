@@ -39,15 +39,14 @@ import DashboardLayout from "@/layouts/DashboardLayout"
 import { useAppDispatch, useAppSelector } from "@/redux/hooks"
 import {
   fetchUserFiles,
-  getFileDownloadUrl,
-  getFileViewUrl,
   deleteFile,
   selectFiles,
   selectFilesLoading,
-  selectFilesError,
-  type FileItem,
+  selectFilesError
 } from "@/redux/slices/filesSlice"
 import { toast } from "sonner"
+import { FileItem } from "@/types/FileItem"
+import axiosInstance from "@/utils/axiosInstance"
 
 // Example folders data (in a real app, this would also come from an API)
 const exampleFolders = [
@@ -163,43 +162,41 @@ const FilesPage = () => {
   }
 
   // Handle file preview
-  const handlePreview = async (file: FileItem) => {
-    // If we don't have a view URL yet, fetch it
-    if (!file.viewUrl) {
-      dispatch(getFileViewUrl(file.id))
+    const handlePreview = async (file: FileItem) => {
+      try {
+        const response = await axiosInstance.get<{ url: string }>(`/api/files/${file.id}/viewing-url`)
+        const viewingUrl = response.data.url
+        setPreviewFile(file)
+        // כאן אפשר לעשות משהו עם ה-URL, למשל לפתוח בטאב חדש
+        window.open(viewingUrl, "_blank")
+      } catch (error: any) {
+        console.error("Error fetching viewing URL:", error)
+        toast.error("Failed to get file preview URL")
+      }
     }
-    setPreviewFile(file)
-  }
 
   // Handle file download
-  const handleDownload = async (file: FileItem) => {
-    try {
-      // If we don't have a download URL yet, fetch it
-      if (!file.downloadUrl) {
-        await dispatch(getFileDownloadUrl(file.id)).unwrap()
-      }
+ const handleDownload = async (file: FileItem) => {
+  try {
+    // בקשה לקבלת URL זמני מהשרת
+    const response = await axiosInstance.get<{ url: string }>(`/api/files/${file.id}/download-url`)
+    const downloadUrl = response.data.url
 
-      // Get the updated file with download URL from Redux store
-      const updatedFile = files.find((f) => f.id === file.id)
+    // יצירת קישור זמני והפעלת הורדה
+    const link = document.createElement("a")
+    link.href = downloadUrl
+    link.setAttribute("download", file.fileName)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
 
-      if (updatedFile?.downloadUrl) {
-        // Create a temporary link and trigger download
-        const link = document.createElement("a")
-        link.href = updatedFile.downloadUrl
-        link.setAttribute("download", updatedFile.fileName)
-        document.body.appendChild(link)
-        link.click()
-        document.body.removeChild(link)
-
-        toast.success(`Downloading ${updatedFile.fileName}`)
-      } else {
-        toast.error("Download URL not available")
-      }
-    } catch (error) {
-      toast.error("Failed to download file")
-      console.error("Download error:", error)
-    }
+    toast.success(`Downloading ${file.fileName}`)
+  } catch (error) {
+    toast.error("Failed to download file")
+    console.error("Download error:", error)
   }
+}
+
 
   // Handle file deletion
   const handleDelete = async (fileId: number) => {

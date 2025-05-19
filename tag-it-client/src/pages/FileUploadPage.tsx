@@ -61,42 +61,40 @@ const FileUploadPage = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({}); // Track upload progress for each file
 
-  const handleFilesAdded = (files: File[]) => {
+  const handleFilesAdded = async (files: File[]) => {
     setUploadedFiles((prevFiles) => [...prevFiles, ...files]);
-
-    // Simulate AI tagging after files are added
     setIsAnalyzing(true);
 
-    setTimeout(() => {
-      // Generate example tags based on file type
-      const newTagsData = { ...tagsData };
+    const newTagsData = { ...tagsData };
 
-      files.forEach((file) => {
-        const extension = file.name.split(".").pop()?.toLowerCase();
-        let suggestedTags: string[] = [];
+    for (const file of files) {
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
 
-        if (extension === "pdf") {
-          suggestedTags = ["document", "contract", "report"];
-        } else if (["jpg", "jpeg", "png", "gif"].includes(extension || "")) {
-          suggestedTags = ["image", "photo", "visual"];
-        } else if (["doc", "docx"].includes(extension || "")) {
-          suggestedTags = ["document", "text", "word"];
-        } else if (["xls", "xlsx"].includes(extension || "")) {
-          suggestedTags = ["spreadsheet", "data", "excel"];
-        } else {
-          suggestedTags = ["file", "misc"];
-        }
+        const response:{data:{
+          tags: string[];
+        }} = await axios.post("http://127.0.0.1:5000/api/tag", formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        });
 
-        newTagsData[file.name] = suggestedTags;
-      });
+        newTagsData[file.name] = response.data.tags || [];
+      } catch (error) {
+        console.error(`Failed to analyze file ${file.name}`, error);
+        newTagsData[file.name] = ["error"];
+        toast.error(`Failed to analyze ${file.name}`);
+      }
+    }
 
-      setTagsData(newTagsData);
-      setIsAnalyzing(false);
-      toast("AI Analysis Complete", {
-        description: `Tags automatically generated for ${files.length} file(s)`,
-      });
-    }, 2000);
+    setTagsData(newTagsData);
+    setIsAnalyzing(false);
+    toast("AI Analysis Complete", {
+      description: `Tags retrieved for ${files.length} file(s) from local server`,
+    });
   };
+
 
   const handleTagsChange = (fileName: string, newTags: string[]) => {
     setTagsData((prev) => ({
@@ -108,7 +106,9 @@ const FileUploadPage = () => {
   const uploadFileToS3 = async (file: File) => {
     try {
       // Step 1: Get the presigned URL from the server
-      const response = await axiosInstance.get("/files/presigned-url", {
+      const response:{data:{
+        url: string;
+      }} = await axiosInstance.get("/files/presigned-url", {
         params: { fileName: file.name },
       });
 
@@ -119,16 +119,16 @@ const FileUploadPage = () => {
 
       // Step 2: Upload the file to the presigned URL
       await axios.put(presignedUrl, file, {
-                      headers: {
-                          "Content-Type": file.type,
-                      },
-                      onUploadProgress: (progressEvent) => {
-                          const percent = Math.round(
-                              (progressEvent.loaded * 100) / (progressEvent.total || 1)
-                          );
-                          setProgress(percent);
-                      },
-                  });
+        headers: {
+          "Content-Type": file.type,
+        },
+        onUploadProgress: (progressEvent) => {
+          const percent = Math.round(
+            (progressEvent.loaded * 100) / (progressEvent.total || 1)
+          );
+          setProgress(percent);
+        },
+      });
       console.log("File uploaded successfully!");
       toast.success(`File "${file.name}" uploaded successfully!`);
     } catch (error: any) {
