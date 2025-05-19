@@ -12,8 +12,8 @@ load_dotenv()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# יצירת HTTP client עם verify=False כדי להתגבר על בעיות SSL (לפי הצורך)
-http_client = httpx.Client(verify=False)
+# יצירת HTTP client עם בדיקת SSL רגילה (verify=True הוא ברירת מחדל, לכן אפשר גם להשמיט)
+http_client = httpx.Client()
 
 # יצירת לקוח OpenAI עם HTTP client מותאם
 client = OpenAI(
