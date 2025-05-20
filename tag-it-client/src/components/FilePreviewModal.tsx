@@ -5,7 +5,7 @@ import { X, Download, ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Skeleton } from "@/components/ui/skeleton"
-import { FileItem } from "@/redux/slices/filesSlice"
+import { FileItem } from "@/types/FileItem"
 
 interface FilePreviewModalProps {
   isOpen: boolean

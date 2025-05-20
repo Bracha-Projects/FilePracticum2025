@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import DashboardLayout from "@/layouts/DashboardLayout";
 import axiosInstance from "@/utils/axiosInstance";
-import axios from "axios";
+import axios, { AxiosProgressEvent } from "axios";
 // Embedding tailwind config directly
 const tailwindConfig = {
   darkMode: ["class", "[data-theme='dark']"],
@@ -74,7 +74,7 @@ const FileUploadPage = () => {
 
         const response:{data:{
           tags: string[];
-        }} = await axios.post("http://127.0.0.1:5000/api/tag", formData, {
+        }} = await axios.post("https://tag-it-ai.onrender.com/api/tag", formData, {
           headers: {
             "Content-Type": "multipart/form-data",
           },
@@ -122,11 +122,14 @@ const FileUploadPage = () => {
         headers: {
           "Content-Type": file.type,
         },
-        onUploadProgress: (progressEvent) => {
+        onUploadProgress: (progressEvent: AxiosProgressEvent) => {
           const percent = Math.round(
             (progressEvent.loaded * 100) / (progressEvent.total || 1)
           );
-          setProgress(percent);
+          setUploadProgress((prev) => ({
+            ...prev,
+            [file.name]: percent,
+          }));
         },
       });
       console.log("File uploaded successfully!");

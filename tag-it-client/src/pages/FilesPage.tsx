@@ -47,16 +47,8 @@ import {
 import { toast } from "sonner"
 import { FileItem } from "@/types/FileItem"
 import axiosInstance from "@/utils/axiosInstance"
+import { fetchUserFolders } from "@/redux/slices/foldersSlice"
 
-// Example folders data (in a real app, this would also come from an API)
-const exampleFolders = [
-  { id: "1", name: "Documents", filesCount: 15, path: "/files/documents" },
-  { id: "2", name: "Images", filesCount: 28, path: "/files/images" },
-  { id: "3", name: "Contracts", filesCount: 7, path: "/files/contracts" },
-  { id: "4", name: "Marketing", filesCount: 12, path: "/files/marketing" },
-  { id: "5", name: "Reports", filesCount: 9, path: "/files/reports" },
-  { id: "6", name: "Invoices", filesCount: 23, path: "/files/invoices" },
-]
 
 type SortOption = "name-asc" | "name-desc" | "date-asc" | "date-desc" | "type-asc" | "type-desc"
 
@@ -64,7 +56,8 @@ const FilesPage = () => {
   const dispatch = useAppDispatch()
   const files = useAppSelector(selectFiles)
   const isLoading = useAppSelector(selectFilesLoading)
-  const error = useAppSelector(selectFilesError)
+  const errorFiles = useAppSelector(selectFilesError)
+  const { folders, loading,error, currentFolder } = useAppSelector((state) => state.folders)
   const [showDebugger, setShowDebugger] = useState(false)
 
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
@@ -77,6 +70,10 @@ const FilesPage = () => {
   // Fetch files on component mount
   useEffect(() => {
     dispatch(fetchUserFiles())
+  }, [dispatch])
+
+  useEffect(() => {
+    dispatch(fetchUserFolders())
   }, [dispatch])
 
   // Extract all unique tags from files
@@ -381,14 +378,14 @@ const FilesPage = () => {
             )}
 
             {/* Folders Section */}
-            {!isLoading && exampleFolders.length > 0 && (
+            {!isLoading && folders.length > 0 && (
               <div className="mb-8">
                 <h2 className="text-lg font-medium text-tagit-darkblue mb-4">Folders</h2>
                 <div
                   className={`grid ${viewMode === "grid" ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" : "grid-cols-1"} gap-4`}
                 >
-                  {exampleFolders.map((folder) => (
-                    <FolderCard key={folder.id} {...folder} />
+                  {folders.map((folder) => (
+                    <FolderCard key={folder.Id} {...folder} />
                   ))}
                 </div>
               </div>

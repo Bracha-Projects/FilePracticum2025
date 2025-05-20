@@ -4,24 +4,22 @@ import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { Link } from 'react-router-dom';
+import { FolderItem } from '@/types/FolderItem';
 
-interface FolderCardProps {
-  id: string;
-  name: string;
-  filesCount: number;
-  path: string;
-  className?: string;
-}
 
-const FolderCard: React.FC<FolderCardProps> = ({
-  id,
-  name,
-  filesCount,
-  path,
-  className,
+
+const FolderCard: React.FC<FolderItem> = ({
+  Id,
+  Name,
+  ParentFolderId,
+  OwnerId,
+  CreatedAt,
+  UpdatedAt,
+  OwnerName,
+  ParentFolderName
 }) => {
   return (
-    <Link to={path} className={cn("block", className)}>
+    // <Link to={path} className={cn("block", className)}>
       <div className="group folder-card">
         <div className="flex justify-between items-start">
           <div className="flex items-center">
@@ -29,10 +27,10 @@ const FolderCard: React.FC<FolderCardProps> = ({
               <Folder className="h-8 w-8 text-tagit-blue" />
             </div>
             <div>
-              <h3 className="font-medium text-tagit-darkblue">{name}</h3>
-              <p className="text-xs text-muted-foreground mt-1">
+              <h3 className="font-medium text-tagit-darkblue">{Name}</h3>
+              {/* <p className="text-xs text-muted-foreground mt-1">
                 {filesCount} {filesCount === 1 ? 'file' : 'files'}
-              </p>
+              </p> */}
             </div>
           </div>
           
@@ -54,7 +52,7 @@ const FolderCard: React.FC<FolderCardProps> = ({
         </div>
         <div className="absolute inset-0 bg-tagit-mint/5 rounded-xl opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-300"></div>
       </div>
-    </Link>
+    // </Link>
   );
 };
 

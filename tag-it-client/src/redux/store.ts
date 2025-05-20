@@ -3,10 +3,8 @@ import { persistReducer, persistStore, FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, 
 import storage from "redux-persist/lib/storage" // Uses localStorage by default
 import { combineReducers } from "redux"
 import userReducer from "./slices/userSlice"
-import fileReducer from "./slices/filesSlice" // Assuming you have a filesSlice
-// Import other reducers as needed
-
-// Configuration for redux-persist
+import fileReducer from "./slices/filesSlice" 
+import folderReducer from "./slices/foldersSlice" // Import the folders reducer
 const persistConfig = {
   key: "tagit-root", // Key for the localStorage entry
   storage,
@@ -18,8 +16,8 @@ const persistConfig = {
 // Combine all your reducers
 const rootReducer = combineReducers({
   user: userReducer,
-  files: fileReducer, // Assuming you have a filesReducer
-  // Add other reducers here
+  files: fileReducer, 
+  folders: folderReducer,  // הוסף כאן את ה־foldersReducer
 })
 
 // Create a persisted reducer
