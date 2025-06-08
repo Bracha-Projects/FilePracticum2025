@@ -14,7 +14,6 @@ namespace Tagit.Core.DTOs
         public int OwnerId { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
-        public string OwnerName { get; set; } 
-        public string ParentFolderName { get; set; } 
+        public bool IsDeleted { get; set; } // דגל למחיקה רכה
     }
 }

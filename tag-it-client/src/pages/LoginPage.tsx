@@ -42,10 +42,10 @@ const LoginPage = () => {
       const response = await axios.post<AuthResponse>("/User/login", loginData);
   
       const data = response.data;
-  
       // Save token and user details in Redux
       dispatch(setUser({ user: data.user, token: data.token }));
-  
+      console.log("Login successful:", data);
+      
       // Save token in localStorage (for API authentication)
       localStorage.setItem("token", data.token);
   

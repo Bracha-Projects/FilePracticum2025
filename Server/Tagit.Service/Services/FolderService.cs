@@ -41,9 +41,10 @@ namespace Tagit.Service.Services
         }
 
         // Get all folders by parent folder ID
-        public async Task<List<FolderDTO>> GetFoldersByParentIdAsync(int parentFolderId)
+        public async Task<List<FolderDTO>> GetFoldersInParentAsync(int userId, int parentFolderId)
         {
-            return _mapper.Map<List<FolderDTO>>(await _folderRepository.GetFoldersByParentIdAsync(parentFolderId));
+            var folders = await _folderRepository.GetFoldersByParentAsync(userId, parentFolderId);
+            return _mapper.Map<List<FolderDTO>>(folders);
         }
 
         // Update an existing folder
@@ -87,6 +88,15 @@ namespace Tagit.Service.Services
         public async Task<List<FileDTO>> GetFilesInFolderAsync(int folderId)
         {
             return _mapper.Map<List<FileDTO>>(await _fileRepository.GetFilesByFolderAsync(folderId));
+        }
+
+        public async Task<bool> UserHasAccessToFolder(int userId, int folderId)
+        {
+            var folder = await _folderRepository.GetFolderByIdAsync(folderId);
+            if (folder == null)
+                return false;
+
+            return folder.OwnerId == userId; 
         }
     }
 }

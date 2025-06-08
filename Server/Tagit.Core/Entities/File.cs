@@ -17,7 +17,7 @@ namespace Tagit.Core.Entities
         public long Size { get; set; } // גודל הקובץ בבתים
         [MaxLength(255)]
         public string S3Key { get; set; } // מזהה הקובץ ב-S3 (לדוג' uploads/user1/file.jpg)
-        public int? FolderId { get; set; } // תיקיית היעד (null אם לא משויך לתיקיה)
+        public int FolderId { get; set; } // תיקיית היעד (null אם לא משויך לתיקיה)
         public int OwnerId { get; set; } // בעל הקובץ
         public DateTime LastModified { get; set; } // To track when the file was last modified
         public DateTime DateCreated { get; set; } // To track when the file was originally created

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Tagit.Data;
 
@@ -11,9 +12,11 @@ using Tagit.Data;
 namespace Tagit.Data.Migrations
 {
     [DbContext(typeof(TagitDBContext))]
-    partial class TagitDBContextModelSnapshot : ModelSnapshot
+    [Migration("20250605213808_add-field-rootUserId")]
+    partial class addfieldrootUserId
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -128,9 +131,6 @@ namespace Tagit.Data.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<int?>("FolderId")
-                        .HasColumnType("int");
-
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("tinyint(1)");
 
@@ -150,7 +150,9 @@ namespace Tagit.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("FolderId");
+                    b.HasIndex("OwnerId");
+
+                    b.HasIndex("ParentFolderId");
 
                     b.ToTable("Folders");
                 });
@@ -370,9 +372,19 @@ namespace Tagit.Data.Migrations
 
             modelBuilder.Entity("Tagit.Core.Entities.Folder", b =>
                 {
-                    b.HasOne("Tagit.Core.Entities.Folder", null)
+                    b.HasOne("Tagit.Core.Entities.User", "Owner")
+                        .WithMany()
+                        .HasForeignKey("OwnerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Tagit.Core.Entities.Folder", "ParentFolder")
                         .WithMany("SubFolders")
-                        .HasForeignKey("FolderId");
+                        .HasForeignKey("ParentFolderId");
+
+                    b.Navigation("Owner");
+
+                    b.Navigation("ParentFolder");
                 });
 
             modelBuilder.Entity("Tagit.Core.Entities.Log", b =>

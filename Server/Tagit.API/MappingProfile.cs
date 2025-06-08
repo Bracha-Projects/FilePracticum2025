@@ -17,9 +17,14 @@ namespace Tagit.API
             CreateMap<FilePostModel, FileDTO>().ReverseMap();
             CreateMap<TagDTO, TagPostModel>().ReverseMap();
             CreateMap<Tag, TagDTO>().ReverseMap();
-            CreateMap<Folder, FolderDTO>()
-                .ForMember(dest => dest.OwnerName, opt => opt.MapFrom(src => src.Owner.FirstName))
-                .ForMember(dest => dest.ParentFolderName, opt => opt.MapFrom(src => src.ParentFolder.Name)).ReverseMap();
+
+            CreateMap<Folder, FolderDTO>();
+
+            CreateMap<FolderDTO, Folder>()
+                .ForMember(dest => dest.Owner, opt => opt.Ignore())          
+                .ForMember(dest => dest.ParentFolder, opt => opt.Ignore())  
+                .ForMember(dest => dest.SubFolders, opt => opt.Ignore())    
+                .ForMember(dest => dest.Files, opt => opt.Ignore());
 
             CreateMap<FolderPostModel, Folder>().ReverseMap();
             CreateMap<FolderPostModel, FolderDTO>().ReverseMap();

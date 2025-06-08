@@ -13,12 +13,13 @@ namespace Tagit.Core.Services
     {
         Task<FolderDTO> AddFolderAsync(FolderDTO folder);
         Task<FolderDTO> GetFolderByIdAsync(int folderId);
-        Task<List<FolderDTO>> GetFoldersByParentIdAsync(int parentFolderId);
+        Task<List<FolderDTO>> GetFoldersInParentAsync(int userId, int parentFolderId);
         Task<FolderDTO> UpdateFolderAsync(FolderDTO folder);
         Task SoftDeleteFolderAsync(int folderId);
         Task<string> GetFolderPathByIdAsync(int folderId);
         Task<List<FolderDTO>> GetUserFoldersAsync(int userId); 
-        Task<List<FileDTO>> GetFilesInFolderAsync(int folderId); 
+        Task<List<FileDTO>> GetFilesInFolderAsync(int folderId);
+        Task<bool> UserHasAccessToFolder(int userId, int folderId);
 
     }
 }

@@ -50,6 +50,7 @@ builder.Services.AddScoped<IFileRepository, FileRepository>();
 builder.Services.AddScoped<ITagRepository, TagRepository>();
 builder.Services.AddScoped<ILogRepository, LogRepository>();
 builder.Services.AddScoped<IFolderRepository, FolderRepository>();
+builder.Services.AddScoped<ISearchRepository, SearchRepository>();  
 //Add dependencies to the Services
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IFileService, FileService>();
@@ -57,6 +58,7 @@ builder.Services.AddScoped<ILogService, LogService>();
 builder.Services.AddScoped<ITagService, TagService>();
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IFolderService, FolderService>();
+builder.Services.AddScoped<ISearchService, SearchService>();
 //Add dependencies to DataContext
 var host = Environment.GetEnvironmentVariable("MYSQL_HOST");
 var databaseName = Environment.GetEnvironmentVariable("MYSQL_DATABASE");

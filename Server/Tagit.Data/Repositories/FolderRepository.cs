@@ -35,10 +35,10 @@ namespace Tagit.Data.Repositories
         }
 
         // Get all folders under a specific parent folder
-        public async Task<List<Folder>> GetFoldersByParentIdAsync(int parentFolderId)
+        public async Task<List<Folder>> GetFoldersByParentAsync(int userId, int parentFolderId)
         {
             return await _context.Folders
-                .Where(f => f.ParentFolderId == parentFolderId && !f.IsDeleted)
+                .Where(f => f.OwnerId == userId && f.ParentFolderId == parentFolderId && !f.IsDeleted)
                 .ToListAsync();
         }
 

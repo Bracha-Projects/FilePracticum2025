@@ -17,12 +17,13 @@ namespace Tagit.API.Controllers
         private readonly IUserService _userService;
         private readonly IMapper _mapper;
         private readonly IJwtService _jwtService;
-
-        public UserController(IUserService userService, IMapper mapper, IJwtService jwtService)
+        private readonly IFolderService _folderService;
+        public UserController(IUserService userService, IMapper mapper, IJwtService jwtService, IFolderService folderService)
         {
             _userService = userService;
             _mapper = mapper;
             _jwtService = jwtService;
+            _folderService = folderService;
         }
 
         [HttpPost("register")]
@@ -32,6 +33,16 @@ namespace Tagit.API.Controllers
             {
                 var userToRegister = _mapper.Map<UserDTO>(user);
                 var registeredUser = await _userService.RegisterUserAsync(userToRegister);
+                var folder = new FolderDTO
+                {
+                    Name = "Root Folder",
+                    OwnerId = registeredUser.Id,
+                    ParentFolderId = null, // Assuming this is the root folder
+                    CreatedAt = DateTime.UtcNow
+                };
+                var createdFolder = await _folderService.AddFolderAsync(folder);
+                registeredUser.RootFolderId = createdFolder.Id; 
+                await _userService.UpdateUserSettingsAsync(registeredUser); 
                 var token = _jwtService.GenerateJwtToken(_mapper.Map<User>(registeredUser));
                 return Ok(new AuthResponse
                 {

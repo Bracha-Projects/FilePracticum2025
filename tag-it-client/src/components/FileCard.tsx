@@ -4,8 +4,8 @@ import type React from "react"
 import { Download, Eye, MoreVertical, Trash2, Share2, Edit } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { toast } from "sonner"
-import { FileItem, formatFileSize } from "@/redux/slices/filesSlice"
+import type { FileItem } from "@/types/FileItem"
+import { useState } from "react"
 
 interface FileCardProps {
   file: FileItem
@@ -13,10 +13,23 @@ interface FileCardProps {
   onDownload: (file: FileItem) => void
   onDelete: (fileId: number) => void
   customIcon?: React.ReactNode
+  className?: string
 }
 
-const FileCard = ({ file, onPreview, onDownload, onDelete, customIcon }: FileCardProps) => {
-  const { id, fileName, fileType, size, tags, lastModified, isDeleting } = file
+// Helper function to format file size
+export const formatFileSize = (bytes: number): string => {
+  if (bytes === 0) return "0 Bytes"
+
+  const k = 1024
+  const sizes = ["Bytes", "KB", "MB", "GB", "TB"]
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+
+  return Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i]
+}
+
+const FileCard = ({ file, onPreview, onDownload, onDelete, customIcon, className }: FileCardProps) => {
+  const { id, fileName, fileType, size, tags, lastModified } = file
+  const [isDeleting, setIsDeleting] = useState(false)
 
   // Format the date to a more readable format
   const formattedDate = new Date(lastModified).toLocaleDateString("en-US", {
@@ -51,13 +64,15 @@ const FileCard = ({ file, onPreview, onDownload, onDelete, customIcon }: FileCar
 
   const handleDelete = () => {
     if (window.confirm(`Are you sure you want to delete ${fileName}?`)) {
+      setIsDeleting(true)
       onDelete(id)
-      toast.success(`File "${fileName}" deleted successfully`)
     }
   }
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-md transition-shadow duration-200">
+    <div
+      className={`bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-md transition-shadow duration-200 ${className}`}
+    >
       <div className="p-4">
         <div className="flex items-start justify-between">
           <div className="flex items-center space-x-3">
@@ -71,7 +86,7 @@ const FileCard = ({ file, onPreview, onDownload, onDelete, customIcon }: FileCar
             <div>
               <h3 className="font-medium text-gray-900 truncate max-w-[180px]">{fileName}</h3>
               <p className="text-sm text-gray-500">
-                {fileType} • {formatFileSize(size)}
+                {fileType} • {formatFileSize(typeof size === "string" ? Number.parseInt(size) : size)}
               </p>
             </div>
           </div>

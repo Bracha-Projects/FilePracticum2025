@@ -24,8 +24,8 @@ namespace Tagit.Core.Entities
         public bool IsActive { get; set; } 
         [MaxLength(255)]
         public string? ProfileImageUrl { get; set; } 
-        public DateTime? LastLoginAt { get; set; } 
-
+        public DateTime? LastLoginAt { get; set; }
+        public int RootFolderId { get; set; }
 
         // connections
         public List<File> Files { get; set; }

@@ -1,23 +1,44 @@
 import axios from "axios"
+import { store } from "@/redux/store"
 
-// Create an Axios instance
 const axiosInstance = axios.create({
-  baseURL: "https://localhost:7153/api", // Set your base API URL
+  baseURL:  "https://localhost:7153/api",
+  headers: {
+    "Content-Type": "application/json",
+  },
 })
 
-// Add a request interceptor to include the token in headers
+// Add a request interceptor to include the auth token from Redux
 axiosInstance.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("token") // Retrieve token from localStorage
+    const state = store.getState()
+    const token = state.user.token
+
     if (token) {
-      config.headers = config.headers || {}; // Ensure headers is defined
-      config.headers.Authorization = `Bearer ${token}`; // Add token to Authorization header
+      config.headers.Authorization = `Bearer ${token}`
     }
+
     return config
   },
   (error) => {
     return Promise.reject(error)
-  }
+  },
+)
+
+// Add a response interceptor to handle common errors
+axiosInstance.interceptors.response.use(
+  (response) => {
+    return response
+  },
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      // Clear user data from Redux and redirect to login
+      const { dispatch } = store
+      dispatch({ type: "user/logout" })
+      window.location.href = "/login"
+    }
+    return Promise.reject(error)
+  },
 )
 
 export default axiosInstance

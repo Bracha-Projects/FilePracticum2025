@@ -1,6 +1,5 @@
 "use client"
 
-import { DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { useState, useMemo, useEffect } from "react"
 import {
   FolderPlus,
@@ -15,13 +14,14 @@ import {
   ImageIcon,
   Loader2,
   AlertCircle,
+  Plus,
+  ChevronLeft,
 } from "lucide-react"
 import PageHeading from "@/components/PageHeading"
 import FolderCard from "@/components/FolderCard"
 import FileCard from "@/components/FileCard"
 import FileBreadcrumb from "@/components/FileBreadcrumb"
 import FilePreviewModal from "@/components/FilePreviewModal"
-import ApiDebugger from "@/components/ApiDebugger"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -33,32 +33,49 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import DashboardLayout from "@/layouts/DashboardLayout"
 import { useAppDispatch, useAppSelector } from "@/redux/hooks"
-import {
-  fetchUserFiles,
-  deleteFile,
-  selectFiles,
-  selectFilesLoading,
-  selectFilesError
-} from "@/redux/slices/filesSlice"
 import { toast } from "sonner"
-import { FileItem } from "@/types/FileItem"
+import type { FileItem } from "@/types/FileItem"
 import axiosInstance from "@/utils/axiosInstance"
-import { fetchUserFolders } from "@/redux/slices/foldersSlice"
-
+import {
+  createFolder,
+  deleteFile,
+  fetchFolderContents,
+  goToParentFolder,
+  resetFolderPath,
+  selectCurrentFolderId,
+  selectFiles,
+  selectFolderContentsError,
+  selectFolderContentsLoading,
+  selectFolderPath,
+  selectSubFolders,
+  setCurrentFolder,
+} from "@/redux/slices/folderContentsSlice"
 
 type SortOption = "name-asc" | "name-desc" | "date-asc" | "date-desc" | "type-asc" | "type-desc"
 
 const FilesPage = () => {
   const dispatch = useAppDispatch()
   const files = useAppSelector(selectFiles)
-  const isLoading = useAppSelector(selectFilesLoading)
-  const errorFiles = useAppSelector(selectFilesError)
-  const { folders, loading,error, currentFolder } = useAppSelector((state) => state.folders)
-  const [showDebugger, setShowDebugger] = useState(false)
+  const isLoading = useAppSelector(selectFolderContentsLoading)
+  const error = useAppSelector(selectFolderContentsError)
+  const folders = useAppSelector(selectSubFolders)
+  const currentFolderId = useAppSelector(selectCurrentFolderId)
+  const folderPath = useAppSelector(selectFolderPath)
+  const user = useAppSelector((state) => state.user.user)
 
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
   const [searchQuery, setSearchQuery] = useState("")
@@ -67,14 +84,65 @@ const FilesPage = () => {
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [previewFile, setPreviewFile] = useState<FileItem | null>(null)
 
-  // Fetch files on component mount
-  useEffect(() => {
-    dispatch(fetchUserFiles())
-  }, [dispatch])
+  // Date range filters
+  const [fromDate, setFromDate] = useState("")
+  const [toDate, setToDate] = useState("")
 
+  // Folder creation state
+  const [isCreateFolderOpen, setIsCreateFolderOpen] = useState(false)
+  const [newFolderName, setNewFolderName] = useState("")
+  const [isCreatingFolder, setIsCreatingFolder] = useState(false)
+
+  // Initialize with root folder
   useEffect(() => {
-    dispatch(fetchUserFolders())
-  }, [dispatch])
+    if (user?.id && user?.rootFolderId && folderPath.length === 0) {
+      dispatch(setCurrentFolder(user.rootFolderId))
+      dispatch(resetFolderPath({ id: user.rootFolderId, name: "My Files" }))
+      dispatch(fetchFolderContents(user.rootFolderId))
+    }
+  }, [dispatch, user, folderPath.length])
+
+  // Create new folder
+  const handleCreateFolder = async () => {
+    if (!newFolderName.trim()) {
+      toast.error("Please enter a folder name")
+      return
+    }
+
+    if (!user?.id || !currentFolderId) {
+      toast.error("User or folder information missing")
+      return
+    }
+
+    try {
+      setIsCreatingFolder(true)
+      await dispatch(
+        createFolder({
+          name: newFolderName.trim(),
+          parentFolderId: currentFolderId,
+          ownerId: user.id,
+        }),
+      ).unwrap()
+
+      toast.success("Folder created successfully")
+      setNewFolderName("")
+      setIsCreateFolderOpen(false)
+    } catch (error) {
+      console.error("Error creating folder:", error)
+      toast.error("Failed to create folder")
+    } finally {
+      setIsCreatingFolder(false)
+    }
+  }
+
+  // Navigate to parent folder
+  const handleNavigateUp = () => {
+    if (folderPath.length > 1) {
+      dispatch(goToParentFolder())
+      const parentFolderId = folderPath[folderPath.length - 2].id
+      dispatch(fetchFolderContents(parentFolderId))
+    }
+  }
 
   // Extract all unique tags from files
   const allTags = useMemo(() => {
@@ -87,36 +155,52 @@ const FilesPage = () => {
     return Array.from(tags).sort()
   }, [files])
 
-  // Filter files based on search query, selected tags, and active tab
-  const filteredFiles = useMemo(() => {
-    return files.filter((file) => {
-      // Search by name or tag
-      const matchesSearch =
-        searchQuery === "" ||
-        file.fileName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (file.tags && file.tags.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase())))
+  // Filter and sort files based on client-side preferences
+  const filteredAndSortedFiles = useMemo(() => {
+    let filtered = [...files]
 
-      // Filter by selected tags (if any)
-      const matchesTags =
-        selectedTags.length === 0 || (file.tags && selectedTags.some((tag) => file.tags.includes(tag)))
+    // Apply search filter
+    if (searchQuery) {
+      filtered = filtered.filter(
+        (file) =>
+          file.fileName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (file.tags && file.tags.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase()))),
+      )
+    }
 
-      // Filter by file type based on active tab
-      let matchesTab = true
-      if (activeTab === "documents") {
-        matchesTab = ["PDF", "DOCX", "DOC", "TXT"].includes(file.fileType.toUpperCase())
-      } else if (activeTab === "spreadsheets") {
-        matchesTab = ["XLSX", "XLS", "CSV"].includes(file.fileType.toUpperCase())
-      } else if (activeTab === "images") {
-        matchesTab = ["JPG", "JPEG", "PNG", "GIF"].includes(file.fileType.toUpperCase())
-      }
+    // Apply tag filter
+    if (selectedTags.length > 0) {
+      filtered = filtered.filter((file) => file.tags && selectedTags.every((tag) => file.tags.includes(tag)))
+    }
 
-      return matchesSearch && matchesTags && matchesTab
-    })
-  }, [files, searchQuery, selectedTags, activeTab])
+    // Apply date filters
+    if (fromDate) {
+      const fromDateObj = new Date(fromDate)
+      filtered = filtered.filter((file) => new Date(file.dateCreated) >= fromDateObj)
+    }
 
-  // Sort files based on selected sort option
-  const sortedFiles = useMemo(() => {
-    return [...filteredFiles].sort((a, b) => {
+    if (toDate) {
+      const toDateObj = new Date(toDate)
+      toDateObj.setHours(23, 59, 59, 999)
+      filtered = filtered.filter((file) => new Date(file.dateCreated) <= toDateObj)
+    }
+
+    // Filter by file type based on active tab
+    if (activeTab !== "all") {
+      filtered = filtered.filter((file) => {
+        if (activeTab === "documents") {
+          return ["PDF", "DOCX", "DOC", "TXT"].includes(file.fileType.toUpperCase())
+        } else if (activeTab === "spreadsheets") {
+          return ["XLSX", "XLS", "CSV"].includes(file.fileType.toUpperCase())
+        } else if (activeTab === "images") {
+          return ["JPG", "JPEG", "PNG", "GIF"].includes(file.fileType.toUpperCase())
+        }
+        return true
+      })
+    }
+
+    // Sort files
+    return filtered.sort((a, b) => {
       switch (sortOption) {
         case "name-asc":
           return a.fileName.localeCompare(b.fileName)
@@ -134,7 +218,7 @@ const FilesPage = () => {
           return 0
       }
     })
-  }, [filteredFiles, sortOption])
+  }, [files, searchQuery, selectedTags, fromDate, toDate, activeTab, sortOption])
 
   // Toggle tag selection
   const toggleTag = (tag: string) => {
@@ -143,7 +227,6 @@ const FilesPage = () => {
 
   // Helper function to get the appropriate icon for file types
   const getFileIcon = (type: string) => {
-    // Simple file type icon mapping with solid icons
     const lowerType = type.toLowerCase()
     if (lowerType === "pdf") {
       return <FileText className="h-5 w-5 text-red-500" />
@@ -152,48 +235,44 @@ const FilesPage = () => {
     } else if (["xlsx", "xls", "csv"].includes(lowerType)) {
       return <FileText className="h-5 w-5 text-green-500" />
     } else if (["jpg", "jpeg", "png", "gif"].includes(lowerType)) {
-      return <ImageIcon className="h-5 w-5 text-purple-500 fill-current" /> // Using solid Image icon
+      return <ImageIcon className="h-5 w-5 text-purple-500 fill-current" />
     } else {
       return <File className="h-5 w-5 text-tagit-blue" />
     }
   }
 
   // Handle file preview
-    const handlePreview = async (file: FileItem) => {
-      try {
-        const response = await axiosInstance.get<{ url: string }>(`/api/files/${file.id}/viewing-url`)
-        const viewingUrl = response.data.url
-        setPreviewFile(file)
-        // כאן אפשר לעשות משהו עם ה-URL, למשל לפתוח בטאב חדש
-        window.open(viewingUrl, "_blank")
-      } catch (error: any) {
-        console.error("Error fetching viewing URL:", error)
-        toast.error("Failed to get file preview URL")
-      }
+  const handlePreview = async (file: FileItem) => {
+    try {
+      const response = await axiosInstance.get<{ url: string }>(`/file/${file.id}/viewing-url`)
+      const viewingUrl = response.data.url
+      setPreviewFile(file)
+      window.open(viewingUrl, "_blank")
+    } catch (error) {
+      console.error("Error fetching viewing URL:", error)
+      toast.error("Failed to get file preview URL")
     }
+  }
 
   // Handle file download
- const handleDownload = async (file: FileItem) => {
-  try {
-    // בקשה לקבלת URL זמני מהשרת
-    const response = await axiosInstance.get<{ url: string }>(`/api/files/${file.id}/download-url`)
-    const downloadUrl = response.data.url
+  const handleDownload = async (file: FileItem) => {
+    try {
+      const response = await axiosInstance.get<{ url: string }>(`/file/${file.id}/download-url`)
+      const downloadUrl = response.data.url
 
-    // יצירת קישור זמני והפעלת הורדה
-    const link = document.createElement("a")
-    link.href = downloadUrl
-    link.setAttribute("download", file.fileName)
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
+      const link = document.createElement("a")
+      link.href = downloadUrl
+      link.setAttribute("download", file.fileName)
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
 
-    toast.success(`Downloading ${file.fileName}`)
-  } catch (error) {
-    toast.error("Failed to download file")
-    console.error("Download error:", error)
+      toast.success(`Downloading ${file.fileName}`)
+    } catch (error) {
+      toast.error("Failed to download file")
+      console.error("Download error:", error)
+    }
   }
-}
-
 
   // Handle file deletion
   const handleDelete = async (fileId: number) => {
@@ -208,9 +287,50 @@ const FilesPage = () => {
 
   // Force refresh files
   const handleRefresh = () => {
-    dispatch(fetchUserFiles())
-    toast.success("Refreshing files...")
+    if (currentFolderId) {
+      dispatch(fetchFolderContents(currentFolderId))
+      toast.success("Refreshing files...")
+    }
   }
+
+  // Clear all filters
+  const clearAllFilters = () => {
+    setSearchQuery("")
+    setSelectedTags([])
+    setFromDate("")
+    setToDate("")
+    setActiveTab("all")
+  }
+
+  const renderTabContent = (tabValue: string) => (
+    <div className="pt-6 animate-fade-in">
+      {isLoading ? (
+        <div className="flex justify-center items-center py-12">
+          <Loader2 className="h-8 w-8 text-tagit-blue animate-spin" />
+          <span className="ml-2 text-tagit-blue">Loading {tabValue}...</span>
+        </div>
+      ) : filteredAndSortedFiles.length > 0 ? (
+        <div
+          className={`grid ${viewMode === "grid" ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" : "grid-cols-1"} gap-4`}
+        >
+          {filteredAndSortedFiles.map((file) => (
+            <FileCard
+              key={file.id}
+              file={file}
+              customIcon={getFileIcon(file.fileType)}
+              onPreview={() => handlePreview(file)}
+              onDownload={() => handleDownload(file)}
+              onDelete={() => handleDelete(file.id)}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-12 bg-gray-50 rounded-lg border border-gray-100">
+          <p className="text-tagit-blue">No {tabValue} match your search criteria.</p>
+        </div>
+      )}
+    </div>
+  )
 
   return (
     <DashboardLayout>
@@ -221,23 +341,75 @@ const FilesPage = () => {
           <Button variant="outline" onClick={handleRefresh} className="whitespace-nowrap">
             Refresh Files
           </Button>
-          <Button variant="outline" onClick={() => setShowDebugger(!showDebugger)} className="whitespace-nowrap">
-            {showDebugger ? "Hide Debugger" : "Show Debugger"}
-          </Button>
-          <Button className="whitespace-nowrap bg-tagit-blue text-white hover:bg-tagit-darkblue">
-            <FolderPlus className="mr-2 h-4 w-4" />
-            New Folder
-          </Button>
+
+          <Dialog open={isCreateFolderOpen} onOpenChange={setIsCreateFolderOpen}>
+            <DialogTrigger asChild>
+              <Button className="whitespace-nowrap bg-tagit-blue text-white hover:bg-tagit-darkblue">
+                <FolderPlus className="mr-2 h-4 w-4" />
+                New Folder
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Create New Folder</DialogTitle>
+                <DialogDescription>Create a new folder in the current directory.</DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <label htmlFor="folder-name" className="text-right">
+                    Name
+                  </label>
+                  <Input
+                    id="folder-name"
+                    value={newFolderName}
+                    onChange={(e) => setNewFolderName(e.target.value)}
+                    className="col-span-3"
+                    placeholder="Enter folder name"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        handleCreateFolder()
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setIsCreateFolderOpen(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  onClick={handleCreateFolder}
+                  disabled={isCreatingFolder || !newFolderName.trim()}
+                  className="bg-tagit-blue text-white hover:bg-tagit-darkblue"
+                >
+                  {isCreatingFolder ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Creating...
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Create Folder
+                    </>
+                  )}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
-      {showDebugger && (
-        <div className="mb-6">
-          <ApiDebugger />
-        </div>
-      )}
-
-      <FileBreadcrumb items={[{ name: "My Files", path: "/files" }]} className="mb-6" />
+      <div className="flex items-center mb-6">
+        <FileBreadcrumb className="flex-grow" />
+        {folderPath.length > 1 && (
+          <Button variant="outline" size="sm" onClick={handleNavigateUp} className="ml-2">
+            <ChevronLeft className="h-4 w-4 mr-1" />
+            Up
+          </Button>
+        )}
+      </div>
 
       {error && (
         <Alert variant="destructive" className="mb-6">
@@ -260,7 +432,6 @@ const FilesPage = () => {
           </div>
 
           <div className="flex items-center space-x-2">
-            {/* Sort Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" className="border-gray-200">
@@ -289,7 +460,6 @@ const FilesPage = () => {
               </DropdownMenuContent>
             </DropdownMenu>
 
-            {/* View Mode Buttons */}
             <Button
               variant="outline"
               size="icon"
@@ -307,28 +477,45 @@ const FilesPage = () => {
               <List className="h-4 w-4" />
             </Button>
 
-            {/* Filter Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="icon" className="h-10 w-10 border-gray-200">
                   <SlidersHorizontal className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-[200px]">
-                <DropdownMenuLabel>Filter by tags</DropdownMenuLabel>
+              <DropdownMenuContent align="end" className="w-[250px]">
+                <DropdownMenuLabel>Filters</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                {allTags.map((tag) => (
-                  <DropdownMenuItem key={tag} onClick={() => toggleTag(tag)} className="flex items-center">
-                    <div className="w-4 h-4 mr-2 flex items-center justify-center">
-                      {selectedTags.includes(tag) && "✓"}
-                    </div>
-                    {tag}
-                  </DropdownMenuItem>
-                ))}
-                {selectedTags.length > 0 && (
+
+                <div className="p-2">
+                  <label className="text-sm font-medium">From Date</label>
+                  <Input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="mt-1" />
+                </div>
+                <div className="p-2">
+                  <label className="text-sm font-medium">To Date</label>
+                  <Input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className="mt-1" />
+                </div>
+
+                <DropdownMenuSeparator />
+
+                <DropdownMenuLabel>Filter by tags</DropdownMenuLabel>
+                {allTags.length > 0 ? (
+                  allTags.map((tag) => (
+                    <DropdownMenuItem key={tag} onClick={() => toggleTag(tag)} className="flex items-center">
+                      <div className="w-4 h-4 mr-2 flex items-center justify-center">
+                        {selectedTags.includes(tag) && "✓"}
+                      </div>
+                      {tag}
+                    </DropdownMenuItem>
+                  ))
+                ) : (
+                  <DropdownMenuItem disabled>No tags available</DropdownMenuItem>
+                )}
+
+                {(selectedTags.length > 0 || fromDate || toDate) && (
                   <>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => setSelectedTags([])}>Clear filters</DropdownMenuItem>
+                    <DropdownMenuItem onClick={clearAllFilters}>Clear all filters</DropdownMenuItem>
                   </>
                 )}
               </DropdownMenuContent>
@@ -336,25 +523,45 @@ const FilesPage = () => {
           </div>
         </div>
 
-        {/* Selected Tags Display */}
-        {selectedTags.length > 0 && (
+        {(selectedTags.length > 0 || fromDate || toDate || searchQuery) && (
           <div className="flex flex-wrap gap-2 mb-4">
-            <span className="text-sm text-gray-500">Filtered by:</span>
+            <span className="text-sm text-gray-500">Active filters:</span>
+            {searchQuery && (
+              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-tagit-mint/20 text-tagit-blue">
+                Search: {searchQuery}
+                <button className="ml-1 text-tagit-blue hover:text-tagit-darkblue" onClick={() => setSearchQuery("")}>
+                  ×
+                </button>
+              </span>
+            )}
             {selectedTags.map((tag) => (
               <span
                 key={tag}
                 className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-tagit-mint/20 text-tagit-blue"
               >
-                {tag}
+                Tag: {tag}
                 <button className="ml-1 text-tagit-blue hover:text-tagit-darkblue" onClick={() => toggleTag(tag)}>
                   ×
                 </button>
               </span>
             ))}
-            <button
-              className="text-xs text-tagit-blue hover:text-tagit-darkblue underline"
-              onClick={() => setSelectedTags([])}
-            >
+            {fromDate && (
+              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                From: {fromDate}
+                <button className="ml-1 text-blue-800 hover:text-blue-900" onClick={() => setFromDate("")}>
+                  ×
+                </button>
+              </span>
+            )}
+            {toDate && (
+              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                To: {toDate}
+                <button className="ml-1 text-blue-800 hover:text-blue-900" onClick={() => setToDate("")}>
+                  ×
+                </button>
+              </span>
+            )}
+            <button className="text-xs text-tagit-blue hover:text-tagit-darkblue underline" onClick={clearAllFilters}>
               Clear all
             </button>
           </div>
@@ -369,7 +576,6 @@ const FilesPage = () => {
           </TabsList>
 
           <TabsContent value="all" className="pt-6 animate-fade-in">
-            {/* Loading State */}
             {isLoading && (
               <div className="flex justify-center items-center py-12">
                 <Loader2 className="h-8 w-8 text-tagit-blue animate-spin" />
@@ -377,7 +583,6 @@ const FilesPage = () => {
               </div>
             )}
 
-            {/* Folders Section */}
             {!isLoading && folders.length > 0 && (
               <div className="mb-8">
                 <h2 className="text-lg font-medium text-tagit-darkblue mb-4">Folders</h2>
@@ -391,21 +596,20 @@ const FilesPage = () => {
               </div>
             )}
 
-            {/* Files Section */}
             {!isLoading && (
               <div>
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="text-lg font-medium text-tagit-darkblue">Files</h2>
                   <div className="text-sm text-gray-500">
-                    {sortedFiles.length} file{sortedFiles.length !== 1 ? "s" : ""} found
+                    {filteredAndSortedFiles.length} file{filteredAndSortedFiles.length !== 1 ? "s" : ""} found
                   </div>
                 </div>
 
-                {sortedFiles.length > 0 ? (
+                {filteredAndSortedFiles.length > 0 ? (
                   <div
                     className={`grid ${viewMode === "grid" ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" : "grid-cols-1"} gap-4`}
                   >
-                    {sortedFiles.map((file) => (
+                    {filteredAndSortedFiles.map((file) => (
                       <FileCard
                         key={file.id}
                         file={file}
@@ -425,105 +629,17 @@ const FilesPage = () => {
             )}
           </TabsContent>
 
-          {/* Other tab contents follow the same pattern */}
-          <TabsContent value="documents">
-            <div className="pt-6 animate-fade-in">
-              {isLoading ? (
-                <div className="flex justify-center items-center py-12">
-                  <Loader2 className="h-8 w-8 text-tagit-blue animate-spin" />
-                  <span className="ml-2 text-tagit-blue">Loading documents...</span>
-                </div>
-              ) : sortedFiles.length > 0 ? (
-                <div
-                  className={`grid ${viewMode === "grid" ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" : "grid-cols-1"} gap-4`}
-                >
-                  {sortedFiles.map((file) => (
-                    <FileCard
-                      key={file.id}
-                      file={file}
-                      customIcon={getFileIcon(file.fileType)}
-                      onPreview={() => handlePreview(file)}
-                      onDownload={() => handleDownload(file)}
-                      onDelete={() => handleDelete(file.id)}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <p className="text-tagit-blue">No documents match your search criteria.</p>
-                </div>
-              )}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="spreadsheets">
-            <div className="pt-6 animate-fade-in">
-              {isLoading ? (
-                <div className="flex justify-center items-center py-12">
-                  <Loader2 className="h-8 w-8 text-tagit-blue animate-spin" />
-                  <span className="ml-2 text-tagit-blue">Loading spreadsheets...</span>
-                </div>
-              ) : sortedFiles.length > 0 ? (
-                <div
-                  className={`grid ${viewMode === "grid" ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" : "grid-cols-1"} gap-4`}
-                >
-                  {sortedFiles.map((file) => (
-                    <FileCard
-                      key={file.id}
-                      file={file}
-                      customIcon={getFileIcon(file.fileType)}
-                      onPreview={() => handlePreview(file)}
-                      onDownload={() => handleDownload(file)}
-                      onDelete={() => handleDelete(file.id)}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <p className="text-tagit-blue">No spreadsheets match your search criteria.</p>
-                </div>
-              )}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="images">
-            <div className="pt-6 animate-fade-in">
-              {isLoading ? (
-                <div className="flex justify-center items-center py-12">
-                  <Loader2 className="h-8 w-8 text-tagit-blue animate-spin" />
-                  <span className="ml-2 text-tagit-blue">Loading images...</span>
-                </div>
-              ) : sortedFiles.length > 0 ? (
-                <div
-                  className={`grid ${viewMode === "grid" ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" : "grid-cols-1"} gap-4`}
-                >
-                  {sortedFiles.map((file) => (
-                    <FileCard
-                      key={file.id}
-                      file={file}
-                      customIcon={getFileIcon(file.fileType)}
-                      onPreview={() => handlePreview(file)}
-                      onDownload={() => handleDownload(file)}
-                      onDelete={() => handleDelete(file.id)}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <p className="text-tagit-blue">No images match your search criteria.</p>
-                </div>
-              )}
-            </div>
-          </TabsContent>
+          <TabsContent value="documents">{renderTabContent("documents")}</TabsContent>
+          <TabsContent value="spreadsheets">{renderTabContent("spreadsheets")}</TabsContent>
+          <TabsContent value="images">{renderTabContent("images")}</TabsContent>
         </Tabs>
       </div>
 
-      {/* File Preview Modal */}
       <FilePreviewModal
         isOpen={!!previewFile}
         onClose={() => setPreviewFile(null)}
         file={previewFile}
-        files={sortedFiles}
+        files={filteredAndSortedFiles}
         onDownload={handleDownload}
       />
     </DashboardLayout>

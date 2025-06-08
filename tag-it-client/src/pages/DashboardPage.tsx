@@ -1,3 +1,6 @@
+"use client"
+
+import { useEffect, useState } from "react"
 import { BarChart3, FolderSymlink, Tags, Search, Calendar, Users2, ArrowUpRight, Upload } from "lucide-react"
 import { Link } from "react-router-dom"
 import DashboardLayout from "@/layouts/DashboardLayout"
@@ -6,119 +9,140 @@ import FileCard from "@/components/FileCard"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
+import { useAppDispatch, useAppSelector } from "@/redux/hooks"
+import axiosInstance from "@/utils/axiosInstance"
+import type { FileItem } from "@/types/FileItem"
 
-// Embedding tailwind config directly
-const tailwindConfig = {
-  darkMode: ["class", "[data-theme='dark']"],
-  theme: {
-    extend: {
-      colors: {
-        tagit: {
-          blue: "#4d6a84",
-          darkblue: "#3a5269",
-          mint: "#a8ebc7",
-          lightmint: "#cff6e3",
-        },
-      },
-      keyframes: {
-        "fade-in": {
-          from: {
-            opacity: "0",
-            transform: "translateY(10px)",
-          },
-          to: {
-            opacity: "1",
-            transform: "translateY(0)",
-          },
-        },
-      },
-      animation: {
-        "fade-in": "fade-in 0.5s ease-out forwards",
-      },
-    },
-  },
+interface DashboardStats {
+  totalFiles: number
+  activeTags: number
+  storageUsed: string
+  storagePercentage: number
+  searchQueries: number
 }
 
-// Example data for recent files
-// const recentFiles:FileItem[] = [
-//   {
-//     id: 1,
-//     fileName: "Q4-2023-Financial-Report.pdf",
-//     fileType: "PDF",
-//     size: "2.3 MB",
-//     tags: ["financial", "report", "quarterly"],
-//     lastModified: "2 days ago",
-//   },
-//   {
-//     id: 2,
-//     fileName: "Marketing-Strategy-2024.docx",
-//     fileType: "DOCX",
-//     size: "845 KB",
-//     tags: ["marketing", "strategy", "planning"],
-//     lastModified: "1 week ago",
-//   },
-//   {
-//     id: 3,
-//     fileName: "Client-Contract-ABC-Corp.pdf",
-//     fileType: "PDF",
-//     size: "1.2 MB",
-//     tags: ["contract", "legal", "client"],
-//     lastModified: "3 days ago",
-//   },
-// ]
-
-// Stats data
-const statsData = [
-  {
-    title: "Total Files",
-    value: 347,
-    change: "+12%",
-    trend: "up",
-    icon: <FolderSymlink className="h-5 w-5 text-tagit-mint" />,
-  },
-  {
-    title: "Active Tags",
-    value: 128,
-    change: "+8%",
-    trend: "up",
-    icon: <Tags className="h-5 w-5 text-tagit-mint" />,
-  },
-  {
-    title: "Storage Used",
-    value: "6.5 GB",
-    percentage: 65,
-    icon: <BarChart3 className="h-5 w-5 text-tagit-mint" />,
-  },
-  {
-    title: "Search Queries",
-    value: 845,
-    change: "+24%",
-    trend: "up",
-    icon: <Search className="h-5 w-5 text-tagit-mint" />,
-  },
-]
-
-// Activity data
-const activityData = [
-  { action: "Uploaded", file: "Q4-Financial-Report.pdf", time: "2 hours ago", user: "You" },
-  { action: "Tagged", file: "Marketing-Strategy.docx", time: "Yesterday", user: "Sarah M." },
-  { action: "Downloaded", file: "Client-Contract.pdf", time: "Yesterday", user: "You" },
-  { action: "Shared", file: "Project-Timeline.xlsx", time: "2 days ago", user: "You" },
-  { action: "Commented on", file: "Budget-2024.xlsx", time: "3 days ago", user: "John D." },
-]
-
-// Popular tags
-const popularTags = [
-  { name: "financial", count: 24 },
-  { name: "report", count: 18 },
-  { name: "contract", count: 15 },
-  { name: "marketing", count: 12 },
-  { name: "design", count: 10 },
-  { name: "presentation", count: 8 },
-  { name: "invoice", count: 7 },
-]
+interface ActivityItem {
+  id: number
+  action: string
+  fileName: string
+  time: string
+  userName: string
+}
 
 const DashboardPage = () => {
+  const dispatch = useAppDispatch()
+  const user = useAppSelector((state) => state.user.user)
+  const [stats, setStats] = useState<DashboardStats>({
+    totalFiles: 0,
+    activeTags: 0,
+    storageUsed: "0 GB",
+    storagePercentage: 0,
+    searchQueries: 0,
+  })
+  const [recentFiles, setRecentFiles] = useState<FileItem[]>([])
+  const [activities, setActivities] = useState<ActivityItem[]>([])
+  const [popularTags, setPopularTags] = useState<{ name: string; count: number }[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (user?.id) {
+      fetchDashboardData()
+    }
+  }, [user])
+
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true)
+
+      // Fetch recent files from user's root folder
+      if (user?.rootFolderId) {
+        const filesResponse = await axiosInstance.get(`/folder/${user.rootFolderId}/items`)
+        const files = filesResponse.data.files || []
+        setRecentFiles(files.slice(0, 5)) // Get 5 most recent files
+
+        // Calculate stats from files
+        const totalFiles = files.length
+        const allTags = new Set<string>()
+        files.forEach((file: FileItem) => {
+          if (file.tags) {
+            file.tags.forEach((tag) => allTags.add(tag))
+          }
+        })
+
+        // Calculate storage (mock for now - you'd get this from your API)
+        const totalSize = files.reduce((sum: number, file: FileItem) => sum + (+file.size || 0), 0)
+        const storageGB = (totalSize / (1024 * 1024 * 1024)).toFixed(1)
+        const storagePercentage = Math.min((totalSize / (10 * 1024 * 1024 * 1024)) * 100, 100) // Assuming 10GB limit
+
+        setStats({
+          totalFiles,
+          activeTags: allTags.size,
+          storageUsed: `${storageGB} GB`,
+          storagePercentage: Math.round(storagePercentage),
+          searchQueries: 0, // You'd track this in your backend
+        })
+
+        // Generate popular tags
+        const tagCounts: { [key: string]: number } = {}
+        files.forEach((file: FileItem) => {
+          if (file.tags) {
+            file.tags.forEach((tag) => {
+              tagCounts[tag] = (tagCounts[tag] || 0) + 1
+            })
+          }
+        })
+
+        const sortedTags = Object.entries(tagCounts)
+          .sort(([, a], [, b]) => b - a)
+          .slice(0, 7)
+          .map(([name, count]) => ({ name, count }))
+
+        setPopularTags(sortedTags)
+      }
+
+      // Mock activities for now - you'd get this from your API
+      setActivities([
+        { id: 1, action: "Uploaded", fileName: "document.pdf", time: "2 hours ago", userName: "You" },
+        { id: 2, action: "Tagged", fileName: "report.docx", time: "Yesterday", userName: "You" },
+        { id: 3, action: "Downloaded", fileName: "contract.pdf", time: "Yesterday", userName: "You" },
+        { id: 4, action: "Shared", fileName: "timeline.xlsx", time: "2 days ago", userName: "You" },
+        { id: 5, action: "Commented on", fileName: "budget.xlsx", time: "3 days ago", userName: "You" },
+      ])
+    } catch (error) {
+      console.error("Error fetching dashboard data:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const cardStyle = {
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
+    backdropFilter: "blur(16px)",
+    border: "1px solid rgba(168, 235, 199, 0.3)",
+    boxShadow: "0 8px 32px rgba(75, 105, 130, 0.1)",
+    borderRadius: "12px",
+  }
+
+  const buttonStyle = {
+    backgroundColor: "#A8EBC7",
+    color: "#4B6982",
+    fontWeight: "600",
+    borderRadius: "8px",
+    transition: "all 0.3s ease",
+    border: "none",
+    padding: "0.5rem 1rem",
+  }
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderColor: "#4B6982" }}></div>
+        </div>
+      </DashboardLayout>
+    )
+  }
+
   return (
     <DashboardLayout>
       <div className="flex flex-col md:flex-row justify-between items-start mb-8 gap-4">
@@ -130,7 +154,7 @@ const DashboardPage = () => {
 
         <div className="flex space-x-3">
           <Link to="/upload">
-            <Button className="bg-[#A8EBC7] text-[#4B6982] hover:bg-[#A8EBC7]/90">
+            <Button style={buttonStyle}>
               <Upload className="mr-2 h-4 w-4" />
               Upload Files
             </Button>
@@ -140,50 +164,106 @@ const DashboardPage = () => {
 
       {/* Stats Row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        {statsData.map((stat, index) => (
-          <Card key={index} className="glass animate-fade-in" style={{ animationDelay: `${index * 100}ms` }}>
-            <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-              <CardTitle className="text-sm font-medium text-tagit-darkblue">{stat.title}</CardTitle>
-              <div className="p-2 bg-tagit-mint/10 rounded-full">{stat.icon}</div>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-baseline space-x-3">
-                <div className="text-2xl font-bold text-tagit-darkblue">{stat.value}</div>
-                {stat.change && (
-                  <div className={`text-xs font-medium ${stat.trend === "up" ? "text-green-600" : "text-red-600"}`}>
-                    {stat.change}
-                  </div>
-                )}
-              </div>
+        <Card style={cardStyle}>
+          <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+            <CardTitle className="text-sm font-medium" style={{ color: "#3a5269" }}>
+              Total Files
+            </CardTitle>
+            <div className="p-2 rounded-full" style={{ backgroundColor: "rgba(168, 235, 199, 0.1)" }}>
+              <FolderSymlink className="h-5 w-5" style={{ color: "#A8EBC7" }} />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold" style={{ color: "#3a5269" }}>
+              {stats.totalFiles}
+            </div>
+          </CardContent>
+        </Card>
 
-              {stat.percentage !== undefined && (
-                <div className="mt-2">
-                  <Progress value={stat.percentage} className="h-2" />
-                  <p className="text-xs text-tagit-blue mt-1">{stat.percentage}% of 10 GB</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        ))}
+        <Card style={cardStyle}>
+          <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+            <CardTitle className="text-sm font-medium" style={{ color: "#3a5269" }}>
+              Active Tags
+            </CardTitle>
+            <div className="p-2 rounded-full" style={{ backgroundColor: "rgba(168, 235, 199, 0.1)" }}>
+              <Tags className="h-5 w-5" style={{ color: "#A8EBC7" }} />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold" style={{ color: "#3a5269" }}>
+              {stats.activeTags}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card style={cardStyle}>
+          <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+            <CardTitle className="text-sm font-medium" style={{ color: "#3a5269" }}>
+              Storage Used
+            </CardTitle>
+            <div className="p-2 rounded-full" style={{ backgroundColor: "rgba(168, 235, 199, 0.1)" }}>
+              <BarChart3 className="h-5 w-5" style={{ color: "#A8EBC7" }} />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold" style={{ color: "#3a5269" }}>
+              {stats.storageUsed}
+            </div>
+            <div className="mt-2">
+              <Progress value={stats.storagePercentage} className="h-2" />
+              <p className="text-xs mt-1" style={{ color: "#4B6982" }}>
+                {stats.storagePercentage}% of 10 GB
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card style={cardStyle}>
+          <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+            <CardTitle className="text-sm font-medium" style={{ color: "#3a5269" }}>
+              Search Queries
+            </CardTitle>
+            <div className="p-2 rounded-full" style={{ backgroundColor: "rgba(168, 235, 199, 0.1)" }}>
+              <Search className="h-5 w-5" style={{ color: "#A8EBC7" }} />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold" style={{ color: "#3a5269" }}>
+              {stats.searchQueries}
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Recent Files */}
         <div className="lg:col-span-2">
-          <Card className="glass h-full">
+          <Card style={cardStyle} className="h-full">
             <CardHeader className="pb-3">
               <div className="flex justify-between items-center">
-                <CardTitle className="text-xl text-tagit-darkblue">Recent Files</CardTitle>
-                <Link to="/files" className="text-sm text-tagit-blue hover:text-tagit-mint transition-colors">
+                <CardTitle className="text-xl" style={{ color: "#3a5269" }}>
+                  Recent Files
+                </CardTitle>
+                <Link to="/files" className="text-sm transition-colors" style={{ color: "#4B6982" }}>
                   View all
                 </Link>
               </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {/* {recentFiles.map((file) => (
-                  <FileCard key={file.id} {...file} className="animate-fade-in" />
-                ))} */}
+                {recentFiles.length > 0 ? (
+                  recentFiles.map((file) => (
+                    <FileCard
+                      key={file.id}
+                      file={file}
+                      onPreview={() => {}}
+                      onDownload={() => {}}
+                      onDelete={() => {}}
+                    />
+                  ))
+                ) : (
+                  <p style={{ color: "#4B6982" }}>No recent files found. Upload some files to get started!</p>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -192,38 +272,41 @@ const DashboardPage = () => {
         {/* Right Sidebar */}
         <div className="lg:col-span-1 space-y-6">
           {/* Activity Feed */}
-          <Card className="glass">
+          <Card style={cardStyle}>
             <CardHeader className="pb-3">
-              <CardTitle className="text-xl text-tagit-darkblue">Activity</CardTitle>
+              <CardTitle className="text-xl" style={{ color: "#3a5269" }}>
+                Activity
+              </CardTitle>
               <CardDescription>Recent activities by you and your team</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {activityData.map((activity, index) => (
-                  <div
-                    key={index}
-                    className="flex items-start space-x-3 animate-fade-in"
-                    style={{ animationDelay: `${index * 100}ms` }}
-                  >
-                    <div className="p-2 bg-tagit-mint/10 rounded-full flex-shrink-0">
+                {activities.map((activity) => (
+                  <div key={activity.id} className="flex items-start space-x-3">
+                    <div
+                      className="p-2 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: "rgba(168, 235, 199, 0.1)" }}
+                    >
                       {activity.action === "Uploaded" ? (
-                        <Upload className="h-4 w-4 text-tagit-blue" />
+                        <Upload className="h-4 w-4" style={{ color: "#4B6982" }} />
                       ) : activity.action === "Tagged" ? (
-                        <Tags className="h-4 w-4 text-tagit-blue" />
+                        <Tags className="h-4 w-4" style={{ color: "#4B6982" }} />
                       ) : activity.action === "Downloaded" ? (
-                        <ArrowUpRight className="h-4 w-4 text-tagit-blue" />
+                        <ArrowUpRight className="h-4 w-4" style={{ color: "#4B6982" }} />
                       ) : activity.action === "Shared" ? (
-                        <Users2 className="h-4 w-4 text-tagit-blue" />
+                        <Users2 className="h-4 w-4" style={{ color: "#4B6982" }} />
                       ) : (
-                        <Calendar className="h-4 w-4 text-tagit-blue" />
+                        <Calendar className="h-4 w-4" style={{ color: "#4B6982" }} />
                       )}
                     </div>
                     <div>
-                      <p className="text-sm text-tagit-darkblue">
-                        <span className="font-medium">{activity.user}</span> {activity.action.toLowerCase()}{" "}
-                        <span className="font-medium">{activity.file}</span>
+                      <p className="text-sm" style={{ color: "#3a5269" }}>
+                        <span className="font-medium">{activity.userName}</span> {activity.action.toLowerCase()}{" "}
+                        <span className="font-medium">{activity.fileName}</span>
                       </p>
-                      <p className="text-xs text-muted-foreground mt-1">{activity.time}</p>
+                      <p className="text-xs mt-1" style={{ color: "rgba(75, 105, 130, 0.6)" }}>
+                        {activity.time}
+                      </p>
                     </div>
                   </div>
                 ))}
@@ -232,23 +315,37 @@ const DashboardPage = () => {
           </Card>
 
           {/* Popular Tags */}
-          <Card className="glass">
+          <Card style={cardStyle}>
             <CardHeader className="pb-3">
-              <CardTitle className="text-xl text-tagit-darkblue">Popular Tags</CardTitle>
+              <CardTitle className="text-xl" style={{ color: "#3a5269" }}>
+                Popular Tags
+              </CardTitle>
               <CardDescription>Most used tags across your files</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap gap-2">
-                {popularTags.map((tag, index) => (
-                  <div
-                    key={index}
-                    className="px-3 py-1.5 bg-tagit-mint/20 text-tagit-darkblue rounded-full text-sm flex items-center animate-fade-in"
-                    style={{ animationDelay: `${index * 50}ms` }}
-                  >
-                    <span>{tag.name}</span>
-                    <span className="ml-2 text-xs bg-tagit-mint/40 px-1.5 py-0.5 rounded-full">{tag.count}</span>
-                  </div>
-                ))}
+                {popularTags.length > 0 ? (
+                  popularTags.map((tag, index) => (
+                    <div
+                      key={`${tag.name}-${index}`}
+                      className="px-3 py-1.5 rounded-full text-sm flex items-center"
+                      style={{
+                        backgroundColor: "rgba(168, 235, 199, 0.2)",
+                        color: "#3a5269",
+                      }}
+                    >
+                      <span>{tag.name}</span>
+                      <span
+                        className="ml-2 text-xs px-1.5 py-0.5 rounded-full"
+                        style={{ backgroundColor: "rgba(168, 235, 199, 0.4)" }}
+                      >
+                        {tag.count}
+                      </span>
+                    </div>
+                  ))
+                ) : (
+                  <p style={{ color: "#4B6982" }}>No tags found yet. Start tagging your files!</p>
+                )}
               </div>
             </CardContent>
           </Card>

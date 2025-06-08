@@ -5,6 +5,5 @@ export interface FolderItem {
     OwnerId: number;
     CreatedAt: Date;
     UpdatedAt: Date;
-    OwnerName: string;
-    ParentFolderName: string;
+    IsDeleted: number
 }

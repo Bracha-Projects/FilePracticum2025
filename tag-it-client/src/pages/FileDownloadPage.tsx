@@ -250,7 +250,7 @@ const FileDownloadPage = () => {
                             </span>
                           </div>
                           <div className="mt-2">
-                            <TagDisplay tags={file.tags} readOnly className="flex-wrap" />
+                            <TagDisplay tags={file.tags} className="flex-wrap" />
                           </div>
                         </div>
                       </div>

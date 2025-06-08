@@ -1,11 +1,13 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { X, Download, ChevronLeft, ChevronRight } from "lucide-react"
+import { X, Download, ChevronLeft, ChevronRight, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Skeleton } from "@/components/ui/skeleton"
-import { FileItem } from "@/types/FileItem"
+import type { FileItem } from "@/types/FileItem"
+import axiosInstance from "@/utils/axiosInstance"
+import { formatFileSize } from "./FileCard"
 
 interface FilePreviewModalProps {
   isOpen: boolean
@@ -36,22 +38,14 @@ const FilePreviewModal = ({ isOpen, onClose, file, files = [], onDownload }: Fil
 
       setIsLoading(true)
       setPreviewError(null)
+      setPreviewUrl(null)
 
       try {
-        // In a real app, this would come from the Redux state or be fetched here
-        // For now, we'll simulate a delay and use the viewUrl if available
-        await new Promise((resolve) => setTimeout(resolve, 800))
-
-        if (file.viewUrl) {
-          setPreviewUrl(file.viewUrl)
-        } else {
-          // Fallback for testing
-          setPreviewUrl(null)
-          setPreviewError("Preview URL not available")
-        }
+        const response = await axiosInstance.get(`/file/${file.id}/viewing-url`)
+        setPreviewUrl(response.data.url)
       } catch (error) {
+        console.error("Error fetching preview URL:", error)
         setPreviewError("Failed to load preview")
-        console.error("Preview error:", error)
       } finally {
         setIsLoading(false)
       }
@@ -94,7 +88,7 @@ const FilePreviewModal = ({ isOpen, onClose, file, files = [], onDownload }: Fil
     if (previewError) {
       return (
         <div className="h-[70vh] w-full bg-gray-100 rounded flex flex-col items-center justify-center p-8">
-          <div className="text-6xl mb-4">📄</div>
+          <AlertCircle className="h-16 w-16 text-red-500 mb-4" />
           <h3 className="text-xl font-medium mb-2">{currentFile.fileName}</h3>
           <p className="text-gray-500 mb-6">{previewError}</p>
           <Button className="bg-tagit-blue hover:bg-tagit-darkblue" onClick={() => onDownload(currentFile)}>
@@ -113,6 +107,7 @@ const FilePreviewModal = ({ isOpen, onClose, file, files = [], onDownload }: Fil
             src={previewUrl || `/placeholder.svg?height=400&width=600`}
             alt={currentFile.fileName}
             className="max-h-[70vh] max-w-full object-contain rounded"
+            onError={() => setPreviewError("Failed to load image")}
           />
         </div>
       )
@@ -122,30 +117,24 @@ const FilePreviewModal = ({ isOpen, onClose, file, files = [], onDownload }: Fil
     if (currentFile.fileType.toLowerCase() === "pdf") {
       return (
         <div className="h-[70vh] w-full bg-gray-100 rounded flex items-center justify-center">
-          <iframe src={previewUrl || "about:blank"} className="w-full h-full rounded" title={currentFile.fileName}>
-            <p className="text-center">
-              Your browser doesn't support PDF preview.
-              <a href={previewUrl || "#"} className="text-tagit-blue underline ml-1" target="_blank" rel="noreferrer">
-                Open in new tab
-              </a>
-            </p>
-          </iframe>
-        </div>
-      )
-    }
-
-    // For text-based files
-    if (["txt", "md", "json", "html", "css", "js"].includes(currentFile.fileType.toLowerCase())) {
-      return (
-        <div className="h-[70vh] w-full bg-gray-100 rounded p-4 overflow-auto">
-          <pre className="text-sm">
-            {/* In a real app, you would fetch and display the file content */}
-            {previewUrl ? (
-              <iframe src={previewUrl} className="w-full h-full border-0" title={currentFile.fileName}></iframe>
-            ) : (
-              `This is a placeholder for the content of ${currentFile.fileName}. In a real application, the actual text content would be displayed here.`
-            )}
-          </pre>
+          {previewUrl ? (
+            <iframe src={previewUrl} className="w-full h-full rounded" title={currentFile.fileName}>
+              <p className="text-center">
+                Your browser doesn't support PDF preview.
+                <a href={previewUrl} className="text-tagit-blue underline ml-1" target="_blank" rel="noreferrer">
+                  Open in new tab
+                </a>
+              </p>
+            </iframe>
+          ) : (
+            <div className="text-center">
+              <p>PDF preview not available</p>
+              <Button className="mt-4" onClick={() => onDownload(currentFile)}>
+                <Download className="mr-2 h-4 w-4" />
+                Download to view
+              </Button>
+            </div>
+          )}
         </div>
       )
     }
@@ -212,10 +201,28 @@ const FilePreviewModal = ({ isOpen, onClose, file, files = [], onDownload }: Fil
               </span>
             )}
           </div>
-          <Button className="bg-tagit-blue hover:bg-tagit-darkblue" onClick={() => onDownload(currentFile)}>
-            <Download className="mr-2 h-4 w-4" />
-            Download
-          </Button>
+          <div className="flex space-x-4">
+            <div className="text-sm">
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                <span className="font-medium text-gray-700">Size:</span>
+                <span>
+                  {formatFileSize(
+                    typeof currentFile.size === "string" ? Number.parseInt(currentFile.size) : currentFile.size,
+                  )}
+                </span>
+
+                <span className="font-medium text-gray-700">Type:</span>
+                <span>{currentFile.fileType.toUpperCase()}</span>
+
+                <span className="font-medium text-gray-700">Modified:</span>
+                <span>{new Date(currentFile.lastModified).toLocaleDateString()}</span>
+              </div>
+            </div>
+            <Button className="bg-tagit-blue hover:bg-tagit-darkblue" onClick={() => onDownload(currentFile)}>
+              <Download className="mr-2 h-4 w-4" />
+              Download
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

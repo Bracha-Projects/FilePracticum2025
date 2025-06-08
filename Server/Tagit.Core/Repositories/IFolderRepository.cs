@@ -12,7 +12,7 @@ namespace Tagit.Core.Repositories
     {
         Task<Folder> AddFolderAsync(Folder folder);
         Task<Folder> GetFolderByIdAsync(int folderId);
-        Task<List<Folder>> GetFoldersByParentIdAsync(int parentFolderId);
+        Task<List<Folder>> GetFoldersByParentAsync(int userId, int parentFolderId);
         Task<List<Folder>> GetAllFoldersAsync();
         Task<Folder> UpdateFolderAsync(Folder folder);
         Task SoftDeleteFolderAsync(int folderId);

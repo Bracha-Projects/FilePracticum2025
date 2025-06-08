@@ -12,10 +12,8 @@ load_dotenv()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# יצירת HTTP client עם בדיקת SSL רגילה (verify=True הוא ברירת מחדל, לכן אפשר גם להשמיט)
 http_client = httpx.Client()
 
-# יצירת לקוח OpenAI עם HTTP client מותאם
 client = OpenAI(
     api_key=os.getenv("OPENAI_API_KEY"),
     http_client=http_client
@@ -69,6 +67,7 @@ Return the tags in the same language as the document (detected language code: {l
 """
 
     try:
+        logger.info("Preparing to send request to OpenAI. Text length: %d, Language: %s", len(text), lang)
         logger.info("Sending request to OpenAI API...")
         response = client.chat.completions.create(
             model="gpt-4o-mini",
@@ -82,7 +81,6 @@ Return the tags in the same language as the document (detected language code: {l
         )
         tags_text = response.choices[0].message.content.strip()
 
-        # ניקוי תגובת JSON אם היא מגיעה בתוך בלוק קוד
         if tags_text.startswith("```json"):
             tags_text = tags_text[len("```json"):].strip()
         if tags_text.endswith("```"):
@@ -92,5 +90,8 @@ Return the tags in the same language as the document (detected language code: {l
         return json.loads(tags_text)
 
     except Exception as e:
+        import traceback
+        logger.error("Tagging failed: %s", str(e))
+        logger.error("Full traceback:\n%s", traceback.format_exc())
         logger.error(f"Tagging failed: {e}")
         return []

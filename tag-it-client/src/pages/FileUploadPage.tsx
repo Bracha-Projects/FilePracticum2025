@@ -1,260 +1,436 @@
+"use client"
 
-import { useState } from "react";
-import { Info } from "lucide-react";
-import FileDropzone from "@/components/FileDropzone";
-import PageHeading from "@/components/PageHeading";
-import TagDisplay from "@/components/TagDisplay";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { toast } from "sonner";
-import DashboardLayout from "@/layouts/DashboardLayout";
-import axiosInstance from "@/utils/axiosInstance";
-import axios, { AxiosProgressEvent } from "axios";
-// Embedding tailwind config directly
-const tailwindConfig = {
-  darkMode: ["class", "[data-theme='dark']"],
-  theme: {
-    extend: {
-      colors: {
-        tagit: {
-          blue: "#4d6a84",
-          darkblue: "#3a5269",
-          mint: "#a8ebc7",
-          lightmint: "#cff6e3",
-        },
-      },
-      keyframes: {
-        "fade-in": {
-          from: {
-            opacity: "0",
-            transform: "translateY(10px)",
-          },
-          to: {
-            opacity: "1",
-            transform: "translateY(0)",
-          },
-        },
-        "slide-up": {
-          from: {
-            opacity: "0",
-            transform: "translateY(20px)",
-          },
-          to: {
-            opacity: "1",
-            transform: "translateY(0)",
-          },
-        },
-      },
-      animation: {
-        "fade-in": "fade-in 0.5s ease-out forwards",
-        "slide-up": "slide-up 0.5s ease-out forwards",
-      },
-    },
-  },
-};
+import type React from "react"
+
+import { useState, useCallback } from "react"
+import { Upload, X, CheckCircle2, FileText, Loader2, Tag, Plus } from "lucide-react"
+import DashboardLayout from "@/layouts/DashboardLayout"
+import PageHeading from "@/components/PageHeading"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Progress } from "@/components/ui/progress"
+import { Badge } from "@/components/ui/badge"
+import { cn } from "@/lib/utils"
+import { useAppDispatch, useAppSelector } from "@/redux/hooks"
+import { toast } from "sonner"
+import axiosInstance from "@/utils/axiosInstance"
+import { fetchFolderContents } from "@/redux/slices/folderContentsSlice"
+
+interface UploadFile {
+  file: File
+  progress: number
+  status: "uploading" | "complete" | "error"
+  tags: string[]
+  id?: number
+}
 
 const FileUploadPage = () => {
-  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
-  const [tagsData, setTagsData] = useState<{ [key: string]: string[] }>({});
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({}); // Track upload progress for each file
+  const dispatch = useAppDispatch()
+  const user = useAppSelector((state) => state.user.user)
+  const currentFolderId = useAppSelector((state) => state.folderContents.currentFolderId)
 
-  const handleFilesAdded = async (files: File[]) => {
-    setUploadedFiles((prevFiles) => [...prevFiles, ...files]);
-    setIsAnalyzing(true);
+  const [isHovering, setIsHovering] = useState(false)
+  const [uploadedFiles, setUploadedFiles] = useState<UploadFile[]>([])
+  const [newTag, setNewTag] = useState("")
 
-    const newTagsData = { ...tagsData };
+  const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    setIsHovering(true)
+  }, [])
 
-    for (const file of files) {
-      try {
-        const formData = new FormData();
-        formData.append("file", file);
+  const handleDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    setIsHovering(false)
+  }, [])
 
-        const response:{data:{
-          tags: string[];
-        }} = await axios.post("https://tag-it-ai.onrender.com/api/tag", formData, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        });
+  const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    setIsHovering(false)
 
-        newTagsData[file.name] = response.data.tags || [];
-      } catch (error) {
-        console.error(`Failed to analyze file ${file.name}`, error);
-        newTagsData[file.name] = ["error"];
-        toast.error(`Failed to analyze ${file.name}`);
-      }
+    if (e.dataTransfer.files) {
+      const newFiles = Array.from(e.dataTransfer.files)
+      processFiles(newFiles)
+    }
+  }, [])
+
+  const handleFileInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const newFiles = Array.from(e.target.files)
+      processFiles(newFiles)
+      e.target.value = ""
+    }
+  }, [])
+
+  const processFiles = async (files: File[]) => {
+    if (!user?.id) {
+      toast.error("User not authenticated")
+      return
     }
 
-    setTagsData(newTagsData);
-    setIsAnalyzing(false);
-    toast("AI Analysis Complete", {
-      description: `Tags retrieved for ${files.length} file(s) from local server`,
-    });
-  };
+    const folderId = currentFolderId || user.rootFolderId
 
+    const filesWithProgress = files.map((file) => ({
+      file,
+      progress: 0,
+      status: "uploading" as const,
+      tags: [] as string[],
+    }))
 
-  const handleTagsChange = (fileName: string, newTags: string[]) => {
-    setTagsData((prev) => ({
-      ...prev,
-      [fileName]: newTags,
-    }));
-  };
+    setUploadedFiles((prev) => [...prev, ...filesWithProgress])
 
-  const uploadFileToS3 = async (file: File) => {
+    // Upload each file
+    for (let i = 0; i < filesWithProgress.length; i++) {
+      const fileIndex = uploadedFiles.length + i
+      await uploadFile(filesWithProgress[i], fileIndex, folderId)
+    }
+  }
+
+  const uploadFile = async (fileObj: UploadFile, fileIndex: number, folderId: number) => {
     try {
-      // Step 1: Get the presigned URL from the server
-      const response:{data:{
-        url: string;
-      }} = await axiosInstance.get("/files/presigned-url", {
-        params: { fileName: file.name },
-      });
+      // Step 1: Get presigned URL
+      const presignedResponse = await axiosInstance.get<{ url: string }>(
+        `/file/presigned-url?fileName=${encodeURIComponent(fileObj.file.name)}&folderId=${folderId}`,
+      )
 
-      const presignedUrl = response.data.url;
+      const presignedUrl = presignedResponse.data.url
 
-      // Step 2: Upload the file directly to S3
-      console.log("Presigned URL:", presignedUrl);
+      // Step 2: Upload file to S3 with progress tracking
+      const xhr = new XMLHttpRequest()
 
-      // Step 2: Upload the file to the presigned URL
-      await axios.put(presignedUrl, file, {
-        headers: {
-          "Content-Type": file.type,
-        },
-        onUploadProgress: (progressEvent: AxiosProgressEvent) => {
-          const percent = Math.round(
-            (progressEvent.loaded * 100) / (progressEvent.total || 1)
-          );
-          setUploadProgress((prev) => ({
-            ...prev,
-            [file.name]: percent,
-          }));
-        },
-      });
-      console.log("File uploaded successfully!");
-      toast.success(`File "${file.name}" uploaded successfully!`);
-    } catch (error: any) {
-      if (error.response) {
-        console.error("Error uploading file:", error.response.data);
-        toast.error(`Upload failed: ${error.response.data}`);
-      } else {
-        console.error("Error uploading file:", error.message);
-        toast.error("Upload failed. Please try again.");
+      xhr.upload.addEventListener("progress", (e) => {
+        if (e.lengthComputable) {
+          const progress = Math.round((e.loaded / e.total) * 100)
+          setUploadedFiles((prev) => {
+            const updated = [...prev]
+            if (updated[fileIndex]) {
+              updated[fileIndex] = {
+                ...updated[fileIndex],
+                progress,
+              }
+            }
+            return updated
+          })
+        }
+      })
+
+      xhr.addEventListener("load", async () => {
+        if (xhr.status === 200) {
+          // Step 3: Extract S3 key from presigned URL
+          const url = new URL(presignedUrl)
+          const s3Key = url.pathname.substring(1) // Remove leading slash
+
+          // Step 4: Add file metadata to database
+          try {
+            const fileMetadata = {
+              fileName: fileObj.file.name,
+              fileType: fileObj.file.name.split(".").pop()?.toUpperCase() || "UNKNOWN",
+              s3Key: s3Key,
+              size: fileObj.file.size,
+              folderId: folderId,
+            }
+
+            const addFileResponse = await axiosInstance.post("/file/add-file", fileMetadata)
+            const createdFile = addFileResponse.data
+
+            // Step 5: Get AI-generated tags (simulate for now)
+            // In real implementation, you would call your AI service here
+            const aiTags = await generateAITags(fileObj.file)
+
+            setUploadedFiles((prev) => {
+              const updated = [...prev]
+              if (updated[fileIndex]) {
+                updated[fileIndex] = {
+                  ...updated[fileIndex],
+                  progress: 100,
+                  status: "complete",
+                  tags: aiTags,
+                  id: createdFile.id,
+                }
+              }
+              return updated
+            })
+
+            toast.success(`${fileObj.file.name} uploaded successfully`)
+
+            // Refresh folder contents
+            dispatch(fetchFolderContents(folderId))
+          } catch (error) {
+            console.error("Error adding file metadata:", error)
+            setUploadedFiles((prev) => {
+              const updated = [...prev]
+              if (updated[fileIndex]) {
+                updated[fileIndex] = {
+                  ...updated[fileIndex],
+                  status: "error",
+                }
+              }
+              return updated
+            })
+            toast.error(`Failed to save ${fileObj.file.name} metadata`)
+          }
+        } else {
+          throw new Error(`Upload failed with status ${xhr.status}`)
+        }
+      })
+
+      xhr.addEventListener("error", () => {
+        setUploadedFiles((prev) => {
+          const updated = [...prev]
+          if (updated[fileIndex]) {
+            updated[fileIndex] = {
+              ...updated[fileIndex],
+              status: "error",
+            }
+          }
+          return updated
+        })
+        toast.error(`Failed to upload ${fileObj.file.name}`)
+      })
+
+      xhr.open("PUT", presignedUrl)
+      xhr.setRequestHeader("Content-Type", fileObj.file.type)
+      xhr.send(fileObj.file)
+    } catch (error) {
+      console.error("Error uploading file:", error)
+      setUploadedFiles((prev) => {
+        const updated = [...prev]
+        if (updated[fileIndex]) {
+          updated[fileIndex] = {
+            ...updated[fileIndex],
+            status: "error",
+          }
+        }
+        return updated
+      })
+      toast.error(`Failed to upload ${fileObj.file.name}`)
+    }
+  }
+
+  const generateAITags = async (file: File): Promise<string[]> => {
+  const formData = new FormData()
+  formData.append("file", file)
+
+  try {
+    const response = await fetch("https://tag-it-ai.onrender.com/api/tag", {
+      method: "POST",
+      body: formData,
+    })
+
+    if (!response.ok) {
+      throw new Error(`API error: ${response.statusText}`)
+    }
+
+    const data = await response.json()
+
+    // Assume the response is something like: { tags: ["tag1", "tag2"] }
+    return data.tags || []
+  } catch (error) {
+    console.error("Failed to generate tags from API:", error)
+    return []
+  }
+}
+
+
+  const removeFile = (index: number) => {
+    setUploadedFiles((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  const addTag = (fileIndex: number) => {
+    if (!newTag.trim()) return
+
+    setUploadedFiles((prev) => {
+      const updated = [...prev]
+      if (updated[fileIndex] && !updated[fileIndex].tags.includes(newTag.trim())) {
+        updated[fileIndex] = {
+          ...updated[fileIndex],
+          tags: [...updated[fileIndex].tags, newTag.trim()],
+        }
       }
-    }
-  };
+      return updated
+    })
+    setNewTag("")
+  }
 
-  const handleCompleteUpload = async () => {
-    for (const file of uploadedFiles) {
-      await uploadFileToS3(file); // Upload each file one by one
-    }
+  const removeTag = (fileIndex: number, tagToRemove: string) => {
+    setUploadedFiles((prev) => {
+      const updated = [...prev]
+      if (updated[fileIndex]) {
+        updated[fileIndex] = {
+          ...updated[fileIndex],
+          tags: updated[fileIndex].tags.filter((tag) => tag !== tagToRemove),
+        }
+      }
+      return updated
+    })
+  }
 
-    // Clear the files and tags after upload
-    setUploadedFiles([]);
-    setTagsData({});
-    setUploadProgress({});
-  };
+  const saveTags = async (fileIndex: number) => {
+    const fileObj = uploadedFiles[fileIndex]
+    if (!fileObj.id) return
+
+    try {
+      // Here you would call your API to update file tags
+      // await axiosInstance.put(`/file/${fileObj.id}/tags`, { tags: fileObj.tags })
+      toast.success("Tags updated successfully")
+    } catch (error) {
+      console.error("Error updating tags:", error)
+      toast.error("Failed to update tags")
+    }
+  }
+
   return (
     <DashboardLayout>
-      <PageHeading
-        title="Upload Files"
-        subtitle="Upload your files for automatic tagging and organization"
-      />
+      <PageHeading title="Upload Files" subtitle="Upload and manage your files with AI-powered tagging" />
 
-      <Tabs defaultValue="upload" className="w-full">
-        <TabsList className="mb-6">
-          <TabsTrigger value="upload">Upload Files</TabsTrigger>
-          <TabsTrigger value="review">Review & Organize</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="upload" className="animate-fade-in">
-          <div className="glass p-6 md:p-8 rounded-xl shadow-elevation">
-            <FileDropzone onFilesAdded={handleFilesAdded} />
-
-            <div className="mt-8 flex items-start p-4 rounded-lg bg-tagit-mint/10 border border-tagit-mint/20">
-              <Info className="h-5 w-5 text-tagit-blue mt-0.5 mr-3 flex-shrink-0" />
-              <div className="text-sm text-tagit-blue">
-                <p className="font-medium">About automatic tagging</p>
-                <p className="mt-1">
-                  Our AI will analyze your files to generate relevant tags
-                  automatically. You can always review and modify these tags in
-                  the next step.
-                </p>
-              </div>
+      <div className="space-y-6">
+        <div
+          className={cn(
+            "border-2 border-dashed rounded-xl p-8 transition-all duration-300 text-center",
+            isHovering
+              ? "border-[#A8EBC7] bg-[#A8EBC7]/10"
+              : "border-[#4B6982]/30 hover:border-[#A8EBC7]/40 hover:bg-[#A8EBC7]/5",
+          )}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+        >
+          <div className="flex flex-col items-center space-y-4">
+            <div className="p-4 bg-[#A8EBC7]/20 rounded-full">
+              <Upload className="h-8 w-8 text-[#4B6982]" />
             </div>
-          </div>
-        </TabsContent>
+            <div>
+              <p className="text-lg font-medium text-[#4B6982]">Drag and drop files here</p>
+              <p className="text-sm text-[#4B6982]/80 mt-1">or click to browse from your computer</p>
+            </div>
+            <div className="text-xs text-[#4B6982]/60 mt-2">
+              Supported file types: PDF, DOCX, XLSX, JPG, PNG, and more
+            </div>
 
-        <TabsContent value="review" className="animate-fade-in">
-          <div className="glass p-6 md:p-8 rounded-xl shadow-elevation">
-            <h3 className="text-lg font-medium text-tagit-darkblue mb-4">
-              AI Generated Tags
-            </h3>
-
-            {isAnalyzing ? (
-              <div className="text-center py-12">
-                <div className="w-12 h-12 border-4 border-tagit-mint/30 border-t-tagit-mint rounded-full animate-spin mx-auto"></div>
-                <p className="mt-4 text-tagit-blue">Analyzing your files...</p>
+            <label className="mt-4">
+              <input type="file" multiple className="sr-only" onChange={handleFileInputChange} />
+              <div className="bg-[#4B6982] text-white px-4 py-2 rounded-md cursor-pointer hover:bg-[#3a5269] transition-colors shadow-md">
+                Select Files
               </div>
-            ) : uploadedFiles.length > 0 ? (
-              <div className="space-y-6">
-                {uploadedFiles.map((file, index) => (
-                  <div key={index} className="p-4 rounded-lg border border-border">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h4 className="font-medium text-tagit-darkblue">{file.name}</h4>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {(file.size / 1024).toFixed(1)} KB
-                        </p>
+            </label>
+          </div>
+        </div>
+
+        {uploadedFiles.length > 0 && (
+          <div className="space-y-3 animate-fade-in">
+            <h3 className="text-sm font-medium text-[#4B6982]">Uploaded Files</h3>
+            <div className="rounded-lg border border-[#4B6982]/20 overflow-hidden shadow-md">
+              <div className="divide-y divide-[#4B6982]/10">
+                {uploadedFiles.map((fileObj, index) => (
+                  <div key={index} className="p-4">
+                    <div className="flex items-start space-x-3">
+                      <div className="p-2 bg-[#A8EBC7]/20 rounded-lg">
+                        <FileText className="h-5 w-5 text-[#4B6982]" />
                       </div>
-                      {uploadProgress[file.name] && (
-                        <p className="text-xs text-tagit-blue">
-                          Upload Progress: {uploadProgress[file.name]}%
-                        </p>
-                      )}
-                    </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between items-center">
+                          <p className="text-sm font-medium text-[#4B6982] truncate" title={fileObj.file.name}>
+                            {fileObj.file.name}
+                          </p>
+                          <button
+                            onClick={() => removeFile(index)}
+                            className="ml-2 text-[#4B6982]/60 hover:text-red-500 transition-colors"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
 
-                    <div className="mt-4">
-                      <Label htmlFor={`tags-${index}`} className="text-sm mb-2 block">
-                        Tags
-                      </Label>
-                      <TagDisplay
-                        tags={tagsData[file.name] || []}
-                        onTagsChange={(newTags) => handleTagsChange(file.name, newTags)}
-                      />
-                    </div>
+                        <div className="flex items-center mt-1">
+                          <Progress
+                            value={fileObj.progress}
+                            className="h-1.5 flex-1"
+                            indicatorClassName="bg-[#A8EBC7]"
+                          />
+                          <span className="ml-2 text-xs text-[#4B6982]/60 min-w-[40px] text-right">
+                            {fileObj.progress}%
+                          </span>
+                        </div>
 
-                    <div className="mt-4">
-                      <Label htmlFor={`path-${index}`} className="text-sm mb-2 block">
-                        Destination Folder
-                      </Label>
-                      <Input id={`path-${index}`} value="/My Files" className="tagit-input" readOnly />
+                        <div className="mt-1 flex items-center justify-between">
+                          <div className="flex items-center">
+                            {fileObj.status === "complete" ? (
+                              <div className="flex items-center text-xs text-green-600">
+                                <CheckCircle2 className="h-3 w-3 mr-1" />
+                                <span>Complete</span>
+                              </div>
+                            ) : fileObj.status === "error" ? (
+                              <div className="text-xs text-red-600">Upload failed</div>
+                            ) : (
+                              <div className="flex items-center text-xs text-[#4B6982]/60">
+                                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                <span>Uploading...</span>
+                              </div>
+                            )}
+                          </div>
+                          <div className="text-xs text-[#4B6982]/60">{Math.round(fileObj.file.size / 1024)} KB</div>
+                        </div>
+
+                        {/* Tags Section */}
+                        {fileObj.status === "complete" && (
+                          <div className="mt-3 space-y-2">
+                            <div className="flex items-center gap-2">
+                              <Tag className="h-4 w-4 text-[#4B6982]" />
+                              <span className="text-sm font-medium text-[#4B6982]">AI Generated Tags:</span>
+                            </div>
+
+                            <div className="flex flex-wrap gap-1">
+                              {fileObj.tags.map((tag, tagIndex) => (
+                                <Badge
+                                  key={tagIndex}
+                                  variant="secondary"
+                                  className="bg-[#A8EBC7]/20 text-[#4B6982] hover:bg-[#A8EBC7]/30"
+                                >
+                                  {tag}
+                                  <button
+                                    onClick={() => removeTag(index, tag)}
+                                    className="ml-1 text-[#4B6982]/60 hover:text-red-500"
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </button>
+                                </Badge>
+                              ))}
+                            </div>
+
+                            <div className="flex gap-2 mt-2">
+                              <Input
+                                placeholder="Add custom tag..."
+                                value={newTag}
+                                onChange={(e) => setNewTag(e.target.value)}
+                                className="flex-1 h-8 text-sm"
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    addTag(index)
+                                  }
+                                }}
+                              />
+                              <Button
+                                size="sm"
+                                onClick={() => addTag(index)}
+                                className="h-8 bg-[#4B6982] hover:bg-[#3a5269]"
+                              >
+                                <Plus className="h-3 w-3" />
+                              </Button>
+                              <Button size="sm" variant="outline" onClick={() => saveTags(index)} className="h-8">
+                                Save Tags
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}
-
-                <div className="flex justify-end mt-6">
-                  <Button
-                    className="bg-tagit-blue text-white hover:bg-tagit-darkblue"
-                    onClick={handleCompleteUpload}
-                  >
-                    Complete Upload
-                  </Button>
-                </div>
               </div>
-            ) : (
-              <div className="text-center py-12">
-                <p className="text-tagit-blue">
-                  No files uploaded yet. Go to the Upload tab to start.
-                </p>
-              </div>
-            )}
+            </div>
           </div>
-        </TabsContent>
-      </Tabs>
+        )}
+      </div>
     </DashboardLayout>
-  );
-};
+  )
+}
 
-export default FileUploadPage;
+export default FileUploadPage

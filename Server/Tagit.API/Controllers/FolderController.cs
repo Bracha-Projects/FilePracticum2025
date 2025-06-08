@@ -9,7 +9,7 @@ using Tagit.Core.Services;
 namespace Tagit.API.Controllers
 {
     [ApiController]
-    [Route("api/folders")]
+    [Route("api/[controller]")]
     public class FolderController : ControllerBase
     {
         private readonly IFolderService _folderService;
@@ -24,37 +24,60 @@ namespace Tagit.API.Controllers
         }
 
         // Get the list of folders for a user
-        [HttpGet("folders")]
-        public async Task<IActionResult> GetUserFolders()
+        //[HttpGet]
+        //public async Task<IActionResult> GetUserFolders()
+        //{
+        //    try
+        //    {
+        //        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        //        var folders = await _folderService.GetUserFoldersAsync(int.Parse(userId));
+        //        return Ok(folders);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _logger.LogError(ex, "Error fetching user folders");
+        //        return StatusCode(500, "Error fetching user folders");
+        //    }
+        //}
+
+        //// Get files inside a specific folder
+        //[HttpGet("files-in-folder/{folderId}")]
+        //public async Task<IActionResult> GetFilesInFolder(int folderId)
+        //{
+        //    try
+        //    {
+        //        var files = await _folderService.GetFilesInFolderAsync(folderId);
+        //        return Ok(files);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _logger.LogError(ex, "Error fetching files for folder");
+        //        return StatusCode(500, "Error fetching files for folder");
+        //    }
+        //}
+
+        [HttpGet("{folderId}/items")]
+        public async Task<IActionResult> GetFolderContents(int folderId)
         {
             try
             {
-                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                var folders = await _folderService.GetUserFoldersAsync(int.Parse(userId));
-                return Ok(folders);
+                var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+
+                if (!await _folderService.UserHasAccessToFolder(userId, folderId))
+                    return Forbid();
+
+                var subFolders = await _folderService.GetFoldersInParentAsync(userId, folderId);
+                var files = await _folderService.GetFilesInFolderAsync(folderId);
+
+                return Ok(new { subFolders, files });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error fetching user folders");
-                return StatusCode(500, "Error fetching user folders");
+                _logger.LogError(ex, "Error fetching folder contents");
+                return StatusCode(500, "Error fetching folder contents");
             }
         }
 
-        // Get files inside a specific folder
-        [HttpGet("files-in-folder/{folderId}")]
-        public async Task<IActionResult> GetFilesInFolder(int folderId)
-        {
-            try
-            {
-                var files = await _folderService.GetFilesInFolderAsync(folderId);
-                return Ok(files);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error fetching files for folder");
-                return StatusCode(500, "Error fetching files for folder");
-            }
-        }
 
         [HttpPost("create-folder")]
         public async Task<IActionResult> CreateFolder([FromBody] FolderPostModel folder)

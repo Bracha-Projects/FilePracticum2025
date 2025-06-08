@@ -84,6 +84,8 @@ namespace Tagit.Service.Services
                 // Hash של הסיסמה החדשה אם סופקה
                 existingUser.PasswordHash = _passwordHasher.HashPassword(existingUser, user.Password);
             }
+            if (user.RootFolderId != default)
+                existingUser.RootFolderId = user.RootFolderId;
             // עדכון שדות נוספים לפי הצורך
 
             await _userRepository.UpdateAsync(existingUser);

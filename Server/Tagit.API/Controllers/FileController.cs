@@ -20,7 +20,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Tagit.Controllers
 {
     [ApiController]
-    [Route("api/files")]
+    [Route("api/[controller]")]
     public class FileController : ControllerBase
     {
         private readonly IFileService _fileService;
