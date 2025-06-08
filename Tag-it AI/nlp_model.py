@@ -67,7 +67,6 @@ Return the tags in the same language as the document (detected language code: {l
 """
 
     try:
-        logger.info("api-key", os.getenv("OPENAI_API_KEY").strip())
         logger.info("Preparing to send request to OpenAI. Text length: %d, Language: %s", len(text), lang)
         logger.info("Sending request to OpenAI API...")
         response = client.chat.completions.create(
@@ -91,8 +90,5 @@ Return the tags in the same language as the document (detected language code: {l
         return json.loads(tags_text)
 
     except Exception as e:
-        import traceback
-        logger.error("Tagging failed: %s", str(e))
-        logger.error("Full traceback:\n%s", traceback.format_exc())
         logger.error(f"Tagging failed: {e}")
         return []
