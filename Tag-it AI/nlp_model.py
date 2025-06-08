@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 http_client = httpx.Client()
 
 client = OpenAI(
-    api_key=os.getenv("OPENAI_API_KEY"),
+    api_key=os.getenv("OPENAI_API_KEY").strip(),
     http_client=http_client
 )
 
@@ -67,6 +67,7 @@ Return the tags in the same language as the document (detected language code: {l
 """
 
     try:
+        logger.info("api-key", os.getenv("OPENAI_API_KEY").strip())
         logger.info("Preparing to send request to OpenAI. Text length: %d, Language: %s", len(text), lang)
         logger.info("Sending request to OpenAI API...")
         response = client.chat.completions.create(
