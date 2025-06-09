@@ -23,7 +23,6 @@ const FolderCard: React.FC<FolderCardProps> = ({
   parentFolderId,
   ownerId,
   createdAt,
-  updatedAt,
   isDeleted,
   className,
 }) => {

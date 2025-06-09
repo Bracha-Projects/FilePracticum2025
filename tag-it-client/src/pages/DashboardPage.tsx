@@ -9,7 +9,7 @@ import FileCard from "@/components/FileCard"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
-import { useAppDispatch, useAppSelector } from "@/redux/hooks"
+import { useAppSelector } from "@/redux/hooks"
 import axiosInstance from "@/utils/axiosInstance"
 import type { FileItem } from "@/types/FileItem"
 import { UserStats } from "@/types/UserStats"
@@ -18,7 +18,7 @@ import { ActivityItem } from "@/types/ActivityItem"
 
 
 const DashboardPage = () => {
-  const dispatch = useAppDispatch()
+  // const dispatch = useAppDispatch()
   const user = useAppSelector((state) => state.user.user)
   const [stats, setStats] = useState<UserStats>({
     totalFiles: 0,
@@ -43,7 +43,7 @@ const DashboardPage = () => {
 
       // Fetch user stats
       try {
-        const statsResponse = await axiosInstance.get<UserStats>(`User/${user?.id}/stats`)
+        const statsResponse = await axiosInstance.get<UserStats>(`/api/User/${user?.id}/stats`)
         setStats(statsResponse.data)
       } catch (error) {
         console.error("Error fetching user stats:", error)
@@ -53,7 +53,7 @@ const DashboardPage = () => {
       // Fetch recent files from user's root folder
       if (user?.rootFolderId) {
         try {
-          const filesResponse = await axiosInstance.get(`/Folder/${user.rootFolderId}/items`)
+          const filesResponse = await axiosInstance.get(`/api/Folder/${user.rootFolderId}/items`)
           const files = filesResponse.data.files || []
           setRecentFiles(files.slice(0, 5)) // Get 5 most recent files
 
@@ -80,7 +80,7 @@ const DashboardPage = () => {
 
       // Fetch recent activity
       try {
-        const activityResponse = await axiosInstance.get<ActivityItem[]>(`/User/${user?.id}/recent-activity`)
+        const activityResponse = await axiosInstance.get<ActivityItem[]>(`/api/User/${user?.id}/recent-activity`)
         console.log("Recent activity response:", activityResponse.data);
         
         setActivities(activityResponse.data)

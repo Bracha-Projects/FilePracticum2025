@@ -11,7 +11,7 @@ const TagDisplay: React.FC<TagDisplayProps> = ({
   tags,
   maxDisplay = 3,
   className = "",
-  onTagsChange, // נוספה כאן קבלה של הפונקציה
+  // onTagsChange, // נוספה כאן קבלה של הפונקציה
 }) => {
   if (!tags || tags.length === 0) return null
 
@@ -19,10 +19,10 @@ const TagDisplay: React.FC<TagDisplayProps> = ({
   const remainingCount = tags.length - maxDisplay
 
   // אם בעתיד תוסיפי תמיכה באירועים, תוכלי להשתמש ב־onTagsChange כך:
-  const handleRemoveTag = (tagToRemove: string) => {
-    const newTags = tags.filter(tag => tag !== tagToRemove)
-    onTagsChange?.(newTags)
-  }
+  // const handleRemoveTag = (tagToRemove: string) => {
+  //   const newTags = tags.filter(tag => tag !== tagToRemove)
+  //   onTagsChange?.(newTags)
+  // }
 
   return (
     <div className={`flex flex-wrap gap-1 ${className}`}>

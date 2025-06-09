@@ -29,7 +29,7 @@ export const fetchUserActivity = createAsyncThunk<ActivityItem[], { userId: numb
   "activity/fetchUserActivity",
   async ({ userId, limit = 20 }, { rejectWithValue }) => {
     try {
-      const response = await axiosInstance.get<ActivityItem[]>(`/api/user/${userId}/recent-activity?limit=${limit}`)
+      const response = await axiosInstance.get<ActivityItem[]>(`/api/User/${userId}/recent-activity?limit=${limit}`)
       return response.data
     } catch (error: any) {
       console.error("Error fetching user activity:", error)

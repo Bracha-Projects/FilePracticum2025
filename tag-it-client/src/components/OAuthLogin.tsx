@@ -33,9 +33,18 @@ const OAuthLogin: React.FC<OAuthLoginProps> = ({ onSuccess }) => {
         googleLogin();
     }
 
-    const handleGitHubLogin = async () => {
+    const handleGitHubLogin = () => {
         setIsLoading("github")
-        window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/auth/github/login`
+        const width = 600
+        const height = 700
+        const left = window.innerWidth / 2 - width / 2
+        const top = window.innerHeight / 2 - height / 2
+
+        window.open(
+            `${process.env.NEXT_PUBLIC_API_URL}/api/Auth/github/login`,
+            "_blank",
+            `width=${width},height=${height},top=${top},left=${left}`
+        )
     }
 
     const handleOAuthLogin = async (provider: string, accessToken: string) => {
@@ -59,12 +68,14 @@ const OAuthLogin: React.FC<OAuthLoginProps> = ({ onSuccess }) => {
         } catch (error: any) {
             console.error(`${provider} OAuth login failed:`, error)
             toast.error(`${provider} login failed`)
-            setIsLoading(null) // הוסיפי שורה זו
+            setIsLoading(null) 
         }
     }
 
     useEffect(() => {
         const listener = (event: MessageEvent) => {
+            if (event.origin !== process.env.NEXT_PUBLIC_API_URL) return
+
             const { token, user } = event.data
             if (token && user) {
                 dispatch(setUser({ token, user }))

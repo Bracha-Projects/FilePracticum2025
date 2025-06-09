@@ -90,7 +90,7 @@ const FileUploadPage = () => {
       const aiTags = await generateAITags(fileObj.file)
       // Step 1: Get presigned URL
       const presignedResponse = await axiosInstance.get<{ url: string }>(
-        `/File/presigned-url?fileName=${encodeURIComponent(fileObj.file.name)}&folderId=${folderId}`,
+        `/api/File/presigned-url?fileName=${encodeURIComponent(fileObj.file.name)}&folderId=${folderId}`,
       )
 
       const presignedUrl = presignedResponse.data.url
@@ -132,7 +132,7 @@ const FileUploadPage = () => {
               ownerId: user?.id,
             }
 
-            const addFileResponse = await axiosInstance.post("/File/add-file", fileMetadata)
+            const addFileResponse = await axiosInstance.post("/api/File/add-file", fileMetadata)
             const createdFile = addFileResponse.data
 
 

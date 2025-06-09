@@ -29,7 +29,7 @@ export const fetchUserStats = createAsyncThunk<UserStats, number>(
   "userStats/fetchUserStats",
   async (userId: number, { rejectWithValue }) => {
     try {
-      const response = await axiosInstance.get<UserStats>(`/api/user/${userId}/stats`)
+      const response = await axiosInstance.get<UserStats>(`/api/User/${userId}/stats`)
       return response.data
     } catch (error: any) {
       console.error("Error fetching user stats:", error)

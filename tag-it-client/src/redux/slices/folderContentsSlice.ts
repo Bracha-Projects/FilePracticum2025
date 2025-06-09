@@ -45,7 +45,7 @@ export const createFolder = createAsyncThunk<FolderItem, { name: string; parentF
   "folderContents/createFolder",
   async (folderData, { rejectWithValue }) => {
     try {
-      const response = await axiosInstance.post("/Folder/create-folder", folderData)
+      const response = await axiosInstance.post("api/Folder/create-folder", folderData)
       return response.data
     } catch (error: any) {
       console.error("Error creating folder:", error)
@@ -58,7 +58,7 @@ export const deleteFile = createAsyncThunk<number, number>(
   "folderContents/deleteFile",
   async (fileId: number, { rejectWithValue }) => {
     try {
-      await axiosInstance.delete(`/File/delete-file/${fileId}`)
+      await axiosInstance.delete(`api/File/delete-file/${fileId}`)
       return fileId
     } catch (error: any) {
       console.error("Error deleting file:", error)

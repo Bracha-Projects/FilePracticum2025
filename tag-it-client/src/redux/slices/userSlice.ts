@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk, type PayloadAction } from "@reduxjs/toolkit"
 import type { RootState } from "../store"
-import axios from "axios"
 import { User } from "@/types/User"
+import axiosInstance from "@/utils/axiosInstance"
 
 
 
@@ -24,8 +24,8 @@ export const loginUser = createAsyncThunk<{ user: User; token: string }, { email
   "user/login",
   async (credentials, { rejectWithValue }) => {
     try {
-      const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL || "https://api.tagit.com/api"}/auth/login`,
+      const response = await axiosInstance.post(
+        "api/User/login",
         credentials,
       )
       return response.data
@@ -41,8 +41,8 @@ export const registerUser = createAsyncThunk<
   { email: string; password: string; firstName: string; lastName: string }
 >("user/register", async (userData, { rejectWithValue }) => {
   try {
-    const response = await axios.post(
-      `${process.env.NEXT_PUBLIC_API_URL || "https://api.tagit.com/api"}/auth/register`,
+    const response = await axiosInstance.post(
+      "api/User/register",
       userData,
     )
     return response.data

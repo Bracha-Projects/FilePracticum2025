@@ -149,7 +149,7 @@ const FilesPage = () => {
       if(currentFolderId)
         searchParams.folderId = currentFolderId // Search within current folder context
 
-      const response = await axiosInstance.get<FileItem[]>("/Search/Files", {
+      const response = await axiosInstance.get<FileItem[]>("/api/Search/Files", {
         params: searchParams,
       })
 
@@ -288,7 +288,7 @@ const FilesPage = () => {
   // Handle file preview
   const handlePreview = async (file: FileItem) => {
     try {
-      const response = await axiosInstance.get<{ url: string }>(`/file/${file.id}/viewing-url`)
+      const response = await axiosInstance.get<{ url: string }>(`/api/file/${file.id}/viewing-url`)
       const viewingUrl = response.data.url
       setPreviewFile(file)
       window.open(viewingUrl, "_blank")
@@ -301,7 +301,7 @@ const FilesPage = () => {
   // Handle file download
   const handleDownload = async (file: FileItem) => {
     try {
-      const response = await axiosInstance.get<{ url: string }>(`/file/${file.id}/download-url`)
+      const response = await axiosInstance.get<{ url: string }>(`/api/file/${file.id}/download-url`)
       const downloadUrl = response.data.url
 
       const link = document.createElement("a")
