@@ -38,15 +38,15 @@ namespace Tagit.Service.Services
             {
                 return null;
             }
-            user.LastLoginAt = DateTime.Now;
-            await _userRepository.UpdateAsync(user);
             // שימוש ב-PasswordHasher לאימות סיסמה
             var result = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, password);
-            var userDTO = _mapper.Map<UserDTO>(user);
             if (result == PasswordVerificationResult.Success)
             {
-                return userDTO;
+                user.LastLoginAt = DateTime.Now;
+                await _userRepository.UpdateAsync(user);
+                return _mapper.Map<UserDTO>(user);
             }
+            return null;
             return null;
         }
 
@@ -86,6 +86,12 @@ namespace Tagit.Service.Services
                 // Hash של הסיסמה החדשה אם סופקה
                 existingUser.PasswordHash = _passwordHasher.HashPassword(existingUser, user.Password);
             }
+
+            if (!string.IsNullOrEmpty(user.ProfileImageUrl))
+                existingUser.ProfileImageUrl = user.ProfileImageUrl;
+
+            existingUser.IsActive = user.IsActive;
+
             if (user.RootFolderId != default)
                 existingUser.RootFolderId = user.RootFolderId;
             // עדכון שדות נוספים לפי הצורך

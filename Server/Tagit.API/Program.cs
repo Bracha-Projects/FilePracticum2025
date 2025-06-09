@@ -63,6 +63,8 @@ builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IFolderService, FolderService>();
 builder.Services.AddScoped<ISearchService, SearchService>();
 builder.Services.AddScoped<IActivityService, ActivityService>();
+builder.Services.AddScoped<IOAuthService, OAuthService>();
+builder.Services.AddHttpClient();
 //Add dependencies to DataContext
 var host = Environment.GetEnvironmentVariable("MYSQL_HOST");
 var databaseName = Environment.GetEnvironmentVariable("MYSQL_DATABASE");

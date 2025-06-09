@@ -16,6 +16,7 @@ import { AuthResponse } from "@/types/AuthResponse"
 import { LoginRequest } from "@/types/LoginRequest"
 import { useDispatch } from "react-redux";
 import { setUser } from "@/redux/slices/userSlice"
+import OAuthLogin from "@/components/OAuthLogin"
 
 const LoginPage = () => {
   const [email, setEmail] = useState("")
@@ -96,7 +97,9 @@ const LoginPage = () => {
       setIsLoading(false);
     }
   }
-
+ const handleOAuthSuccess = () => {
+    navigate("/dashboard")
+  }
   return (
     <LayoutWrapper>
       <div className="min-h-[80vh] flex flex-col items-center justify-center p-4">
@@ -173,7 +176,7 @@ const LoginPage = () => {
                 {isLoading ? "Signing in..." : "Sign in"}
               </Button>
             </form>
-
+             <OAuthLogin onSuccess={handleOAuthSuccess} />
             <div className="mt-6 text-center">
               <p className="text-sm text-[#4B6982]">
                 Don't have an account?{" "}

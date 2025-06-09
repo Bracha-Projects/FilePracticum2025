@@ -13,6 +13,9 @@ import storage from "redux-persist/lib/storage" // localStorage
 import userReducer from "./slices/userSlice"
 import folderContentsReducer from "./slices/folderContentsSlice"
 import themeReducer from "./slices/themeSlice"
+import userStatsReducer from "./slices/userStatsSlice"
+import recentFilesReducer from "./slices/recentFilesSlice"
+import activityReducer from "./slices/activitySlice"
 
 // הגדרות לשמירת כל ה-slices ב-localStorage
 const persistConfig = {
@@ -26,6 +29,9 @@ const rootReducer = {
   user: persistReducer(persistConfig, userReducer),
   folderContents: persistReducer(persistConfig, folderContentsReducer),
   theme: persistReducer(persistConfig, themeReducer),
+  userStats: userStatsReducer,
+  recentFiles: recentFilesReducer,
+  activity: activityReducer,
 }
 
 export const store = configureStore({

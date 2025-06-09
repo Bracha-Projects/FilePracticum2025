@@ -18,6 +18,7 @@ import { setUser } from "@/redux/slices/userSlice";
 // Import types
 import { UserPostModel } from "@/types/UserPostModel";
 import { AuthResponse } from "@/types/AuthResponse";
+import OAuthLogin from "@/components/OAuthLogin";
 
 const RegisterPage: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -111,6 +112,10 @@ const RegisterPage: React.FC = () => {
       setIsLoading(false);
     }
   };
+
+  const handleOAuthSuccess = () => {
+    navigate("/dashboard")
+  }
 
   return (
     <LayoutWrapper>
@@ -243,6 +248,7 @@ const RegisterPage: React.FC = () => {
               </Button>
             </form>
 
+            <OAuthLogin onSuccess={handleOAuthSuccess} />
             <div className="mt-6 text-center">
               <p className="text-sm text-[#4B6982]">
                 Already have an account?{" "}

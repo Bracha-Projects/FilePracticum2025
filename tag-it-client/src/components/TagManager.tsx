@@ -1,27 +1,34 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
-import { Plus, X, Tag } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Plus, X, Tag, Edit2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import axiosInstance from "@/utils/axiosInstance"
 import { toast } from "sonner"
+import type { Tag as TagDTO } from "@/types/Tag"
 
 interface TagManagerProps {
   fileId: number
-  initialTags: string[]
-  onTagsUpdate: (tags: string[]) => void
+  initialTags: TagDTO[]
+  onTagsUpdate: (tags: TagDTO[]) => void
 }
 
 const TagManager: React.FC<TagManagerProps> = ({ fileId, initialTags, onTagsUpdate }) => {
-  const [tags, setTags] = useState<string[]>(initialTags)
+  const [tags, setTags] = useState<TagDTO[]>(initialTags)
   const [newTag, setNewTag] = useState("")
+  const [editingTag, setEditingTag] = useState<number | null>(null)
+  const [editValue, setEditValue] = useState("")
   const [isLoading, setIsLoading] = useState(false)
 
+  useEffect(() => {
+    setTags(initialTags)
+  }, [initialTags])
+
   const addTag = async () => {
-    if (!newTag.trim() || tags.includes(newTag.trim())) {
+    if (!newTag.trim() || tags.some((tag) => tag.tagName.toLowerCase() === newTag.trim().toLowerCase())) {
       return
     }
 
@@ -29,11 +36,11 @@ const TagManager: React.FC<TagManagerProps> = ({ fileId, initialTags, onTagsUpda
     setIsLoading(true)
 
     try {
-      await axiosInstance.post(`/api/files/${fileId}/tags`, {
-        tag: tagToAdd,
+      const response = await axiosInstance.post<TagDTO>(`/api/files/${fileId}/tags`, {
+        tagName: tagToAdd,
       })
 
-      const updatedTags = [...tags, tagToAdd]
+      const updatedTags = [...tags, response.data]
       setTags(updatedTags)
       setNewTag("")
       onTagsUpdate(updatedTags)
@@ -46,15 +53,13 @@ const TagManager: React.FC<TagManagerProps> = ({ fileId, initialTags, onTagsUpda
     }
   }
 
-  const removeTag = async (tagToRemove: string) => {
+  const removeTag = async (tagToRemove: TagDTO) => {
     setIsLoading(true)
 
     try {
-      await axiosInstance.delete(`/api/files/${fileId}/tags`, {
-        data: { tag: tagToRemove },
-      })
+      await axiosInstance.delete(`/api/files/${fileId}/tags/${tagToRemove.id}`)
 
-      const updatedTags = tags.filter((tag) => tag !== tagToRemove)
+      const updatedTags = tags.filter((tag) => tag.id !== tagToRemove.id)
       setTags(updatedTags)
       onTagsUpdate(updatedTags)
       toast.success("Tag removed successfully")
@@ -66,22 +71,23 @@ const TagManager: React.FC<TagManagerProps> = ({ fileId, initialTags, onTagsUpda
     }
   }
 
-  const updateTag = async (oldTag: string, newTagValue: string) => {
-    if (!newTagValue.trim() || newTagValue === oldTag) {
+  const updateTag = async (tagToUpdate: TagDTO, newTagValue: string) => {
+    if (!newTagValue.trim() || newTagValue === tagToUpdate.tagName) {
+      setEditingTag(null)
       return
     }
 
     setIsLoading(true)
 
     try {
-      await axiosInstance.put(`/api/files/${fileId}/tags`, {
-        oldTag: oldTag,
-        newTag: newTagValue.trim(),
+      const response = await axiosInstance.put<TagDTO>(`/api/files/${fileId}/tags/${tagToUpdate.id}`, {
+        tagName: newTagValue.trim(),
       })
 
-      const updatedTags = tags.map((tag) => (tag === oldTag ? newTagValue.trim() : tag))
+      const updatedTags = tags.map((tag) => (tag.id === tagToUpdate.id ? response.data : tag))
       setTags(updatedTags)
       onTagsUpdate(updatedTags)
+      setEditingTag(null)
       toast.success("Tag updated successfully")
     } catch (error) {
       console.error("Failed to update tag:", error)
@@ -97,6 +103,19 @@ const TagManager: React.FC<TagManagerProps> = ({ fileId, initialTags, onTagsUpda
     }
   }
 
+  const handleEditKeyPress = (e: React.KeyboardEvent, tag: TagDTO) => {
+    if (e.key === "Enter") {
+      updateTag(tag, editValue)
+    } else if (e.key === "Escape") {
+      setEditingTag(null)
+    }
+  }
+
+  const startEditing = (tag: TagDTO) => {
+    setEditingTag(tag.id)
+    setEditValue(tag.tagName)
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center space-x-2">
@@ -106,16 +125,43 @@ const TagManager: React.FC<TagManagerProps> = ({ fileId, initialTags, onTagsUpda
 
       {/* Existing Tags */}
       <div className="flex flex-wrap gap-2">
-        {tags.map((tag, index) => (
+        {tags.map((tag) => (
           <Badge
-            key={index}
+            key={tag.id}
             variant="secondary"
-            className="flex items-center space-x-1 bg-blue-100 text-blue-800 hover:bg-blue-200"
+            className="flex items-center space-x-1 bg-blue-100 text-blue-800 hover:bg-blue-200 group"
           >
-            <span>{tag}</span>
-            <button onClick={() => removeTag(tag)} disabled={isLoading} className="ml-1 hover:text-red-600">
-              <X className="h-3 w-3" />
-            </button>
+            {editingTag === tag.id ? (
+              <Input
+                value={editValue}
+                onChange={(e) => setEditValue(e.target.value)}
+                onBlur={() => updateTag(tag, editValue)}
+                onKeyDown={(e) => handleEditKeyPress(e, tag)}
+                className="h-5 text-xs border-none p-0 bg-transparent focus:ring-0 min-w-[60px]"
+                autoFocus
+                disabled={isLoading}
+              />
+            ) : (
+              <span onClick={() => startEditing(tag)} className="cursor-pointer">
+                {tag.tagName}
+              </span>
+            )}
+            <div className="flex items-center space-x-1">
+              <button
+                onClick={() => startEditing(tag)}
+                disabled={isLoading}
+                className="opacity-0 group-hover:opacity-100 hover:text-blue-600 transition-opacity"
+              >
+                <Edit2 className="h-3 w-3" />
+              </button>
+              <button
+                onClick={() => removeTag(tag)}
+                disabled={isLoading}
+                className="hover:text-red-600 transition-colors"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
           </Badge>
         ))}
       </div>

@@ -26,6 +26,9 @@ namespace Tagit.Core.Entities
         public string? ProfileImageUrl { get; set; } 
         public DateTime? LastLoginAt { get; set; }
         public int RootFolderId { get; set; }
+        public string Provider { get; set; } // "Google", "GitHub", או null
+        public string ProviderId { get; set; } // ה-ID שמתקבל מה-OAuth
+
 
         // connections
         public List<File> Files { get; set; }

@@ -15,6 +15,7 @@ namespace Tagit.Core.Repositories
         Task<User> AddAsync(User user); // שונה מ-AddUserAsync
         Task<User> UpdateAsync(User user); // שונה מ-UpdateUserAsync
         Task<UserStatsModel> GetUserStatsAsync(int userId);
+        Task<User> GetByProviderAsync(string provider, string providerId);
 
     }
 }

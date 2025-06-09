@@ -64,5 +64,10 @@ namespace Tagit.Data.Repositories
                 TotalFolders = totalFolders
             };
         }
+
+        public async Task<User> GetByProviderAsync(string provider, string providerId)
+        {
+            return await _context.Users.FirstOrDefaultAsync(u => u.Provider == provider && u.ProviderId == providerId);
+        }
     }
 }

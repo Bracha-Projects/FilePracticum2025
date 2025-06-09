@@ -70,7 +70,7 @@ namespace Tagit.API.Controllers
                 return NotFound("User not found");
             }
             var userDTO = await _userService.AuthenticateUserAsync(request.Email, request.Password);
-            if (user == null)
+            if (userDTO == null)
             {
                 return Unauthorized();
             }

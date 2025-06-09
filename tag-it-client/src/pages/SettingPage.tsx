@@ -79,36 +79,40 @@ const SettingsPage = () => {
     }
   }
 
-  // Light gray colors instead of black/dark
+  // Consistent colors that work well across all pages
   const getThemeColors = (themeType: ThemeType) => {
     switch (themeType) {
       case "light":
         return {
-          background: "rgba(248, 250, 252, 0.95)", // Very light blue-gray
-          border: "rgba(148, 163, 184, 0.3)", // Light slate
-          text: "#475569", // Slate-600 (light gray)
-          accent: "#0ea5e9", // Sky-500
+          background: "#ffffff",
+          border: "#e2e8f0",
+          text: "#4B6982",
+          accent: "#A8EBC7",
+          secondary: "#f8fafc",
         }
       case "dark":
         return {
-          background: "rgba(241, 245, 249, 0.95)", // Light gray instead of dark
-          border: "rgba(148, 163, 184, 0.4)", // Light slate
-          text: "#64748b", // Slate-500 (medium gray)
-          accent: "#0ea5e9", // Sky-500
+          background: "#f8fafc", // Light background instead of dark
+          border: "#e2e8f0",
+          text: "#4B6982", // Keep consistent text color
+          accent: "#A8EBC7",
+          secondary: "#f1f5f9",
         }
       case "system":
         return {
-          background: "rgba(248, 250, 252, 0.95)", // Light gray
-          border: "rgba(148, 163, 184, 0.4)", // Light slate
-          text: "#64748b", // Slate-500 (medium gray)
-          accent: "#10b981", // Emerald-500
+          background: "#ffffff",
+          border: "#e2e8f0",
+          text: "#4B6982",
+          accent: "#A8EBC7",
+          secondary: "#f8fafc",
         }
       default:
         return {
-          background: "rgba(248, 250, 252, 0.95)",
-          border: "rgba(148, 163, 184, 0.3)",
-          text: "#475569",
-          accent: "#0ea5e9",
+          background: "#ffffff",
+          border: "#e2e8f0",
+          text: "#4B6982",
+          accent: "#A8EBC7",
+          secondary: "#f8fafc",
         }
     }
   }
@@ -117,16 +121,15 @@ const SettingsPage = () => {
 
   const cardStyle = {
     backgroundColor: currentColors.background,
-    backdropFilter: "blur(16px)",
     border: `1px solid ${currentColors.border}`,
-    boxShadow: "0 8px 32px rgba(0, 0, 0, 0.1)",
+    boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
     borderRadius: "12px",
     color: currentColors.text,
   }
 
   const buttonStyle = {
     backgroundColor: currentColors.accent,
-    color: "white",
+    color: currentColors.text,
     fontWeight: "600",
     borderRadius: "8px",
     transition: "all 0.3s ease",
@@ -136,7 +139,7 @@ const SettingsPage = () => {
 
   return (
     <DashboardLayout>
-      <div style={{ backgroundColor: "#f8fafc", minHeight: "100vh", padding: "1.5rem" }}>
+      <div style={{ backgroundColor: currentColors.secondary, minHeight: "100vh", padding: "1.5rem" }}>
         <PageHeading title="Settings" subtitle="Customize your Tag-it experience" />
 
         <div style={cardStyle} className="p-6 md:p-8 max-w-2xl">
@@ -162,7 +165,9 @@ const SettingsPage = () => {
                     <Sun className="h-4 w-4 mr-2" style={{ color: currentColors.accent }} />
                     <div>
                       <div style={{ color: currentColors.text }}>Light Mode</div>
-                      <div className="text-xs opacity-70">Clean and bright interface</div>
+                      <div className="text-xs" style={{ color: `${currentColors.text}80` }}>
+                        Clean and bright interface
+                      </div>
                     </div>
                   </Label>
                 </div>
@@ -178,7 +183,9 @@ const SettingsPage = () => {
                     <Moon className="h-4 w-4 mr-2" style={{ color: currentColors.accent }} />
                     <div>
                       <div style={{ color: currentColors.text }}>Dark Mode</div>
-                      <div className="text-xs opacity-70">Easy on the eyes</div>
+                      <div className="text-xs" style={{ color: `${currentColors.text}80` }}>
+                        Easy on the eyes
+                      </div>
                     </div>
                   </Label>
                 </div>
@@ -194,7 +201,9 @@ const SettingsPage = () => {
                     <Globe className="h-4 w-4 mr-2" style={{ color: currentColors.accent }} />
                     <div>
                       <div style={{ color: currentColors.text }}>System Default</div>
-                      <div className="text-xs opacity-70">Follows your device settings</div>
+                      <div className="text-xs" style={{ color: `${currentColors.text}80` }}>
+                        Follows your device settings
+                      </div>
                     </div>
                   </Label>
                 </div>
