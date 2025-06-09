@@ -30,6 +30,7 @@ namespace Tagit.Service.Services
         public async Task<FolderDTO> AddFolderAsync(FolderDTO folder)
         {
             var folderToAdd = _mapper.Map<Folder>(folder);
+            folder.CreatedAt = DateTime.UtcNow; // Set creation time
             //var user = _userService.GetUserById(folderToAdd.OwnerId);
             return _mapper.Map<FolderDTO>(await _folderRepository.AddFolderAsync(folderToAdd));
         }
@@ -48,11 +49,25 @@ namespace Tagit.Service.Services
         }
 
         // Update an existing folder
-        public async Task<FolderDTO> UpdateFolderAsync(FolderDTO folder)
+        public async Task<FolderDTO> UpdateFolderAsync(int folderId, FolderDTO updatedData)
         {
-            var folderToUpdate = _mapper.Map<Folder>(folder);
-            return _mapper.Map<FolderDTO>(await _folderRepository.UpdateFolderAsync(folderToUpdate));
+            var existingFolder = await _folderRepository.GetFolderByIdAsync(folderId);
+            if (existingFolder == null)
+                throw new Exception("Folder not found");
+
+            if(existingFolder.IsDeleted)
+                throw new Exception("Cannot update a deleted folder");
+
+            if(existingFolder.OwnerId != updatedData.OwnerId)
+                throw new UnauthorizedAccessException("You do not have permission to update this folder");
+
+            _mapper.Map(updatedData, existingFolder);
+
+            await _folderRepository.UpdateFolderAsync(existingFolder);
+
+            return _mapper.Map<FolderDTO>(existingFolder);
         }
+
 
         // Soft delete a folder
         public async Task SoftDeleteFolderAsync(int folderId)

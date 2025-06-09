@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Tagit.Core.DTOs;
 using Tagit.Core.Entities;
+using Tagit.Core.Models;
 using File = Tagit.Core.Entities.File;
 
 namespace Tagit.Core.Services
@@ -16,6 +17,8 @@ namespace Tagit.Core.Services
         Task<UserDTO> UpdateUserSettingsAsync(UserDTO user);
         Task<UserDTO> GetUserByEmail(string email);
         Task<UserDTO> GetUserById(int id);
-       // Task<List<File>> GetUserFilesAsync(int userId, string searchQuery, TagDTO filterTag);
+        Task<UserStatsModel> GetUserStatsAsync(int userId);
+
+        // Task<List<File>> GetUserFilesAsync(int userId, string searchQuery, TagDTO filterTag);
     }
 }

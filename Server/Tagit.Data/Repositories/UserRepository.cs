@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Tagit.Core.Entities;
+using Tagit.Core.Models;
 using Tagit.Core.Repositories;
 
 namespace Tagit.Data.Repositories
@@ -40,6 +41,28 @@ namespace Tagit.Data.Repositories
             _context.Users.Update(user);
             await _context.SaveChangesAsync();
             return user;
+        }
+
+        public async Task<UserStatsModel> GetUserStatsAsync(int userId)
+        {
+            var totalFiles = await _context.Files.CountAsync(f => f.OwnerId == userId);
+            var totalSize = await _context.Files
+                .Where(f => f.OwnerId == userId)
+                .SumAsync(f => (long?)f.Size) ?? 0;
+
+            var totalTags = await _context.Tags
+            .Where(tag => tag.Files.Any(f => f.OwnerId == userId))
+            .CountAsync();
+
+            var totalFolders = await _context.Folders.CountAsync(f => f.OwnerId == userId);
+
+            return new UserStatsModel
+            {
+                TotalFiles = totalFiles,
+                TotalSizeBytes = totalSize,
+                TotalTags = totalTags,
+                TotalFolders = totalFolders
+            };
         }
     }
 }

@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { BarChart3, FolderSymlink, Tags, Search, Calendar, Users2, ArrowUpRight, Upload } from "lucide-react"
+import { BarChart3, FolderSymlink, Tags, Search, Calendar, ArrowUpRight, FileText } from "lucide-react"
 import { Link } from "react-router-dom"
 import DashboardLayout from "@/layouts/DashboardLayout"
 import PageHeading from "@/components/PageHeading"
@@ -12,32 +12,19 @@ import { Progress } from "@/components/ui/progress"
 import { useAppDispatch, useAppSelector } from "@/redux/hooks"
 import axiosInstance from "@/utils/axiosInstance"
 import type { FileItem } from "@/types/FileItem"
+import { UserStats } from "@/types/UserStats"
+import { ActivityItem } from "@/types/ActivityItem"
 
-interface DashboardStats {
-  totalFiles: number
-  activeTags: number
-  storageUsed: string
-  storagePercentage: number
-  searchQueries: number
-}
 
-interface ActivityItem {
-  id: number
-  action: string
-  fileName: string
-  time: string
-  userName: string
-}
 
 const DashboardPage = () => {
   const dispatch = useAppDispatch()
   const user = useAppSelector((state) => state.user.user)
-  const [stats, setStats] = useState<DashboardStats>({
+  const [stats, setStats] = useState<UserStats>({
     totalFiles: 0,
-    activeTags: 0,
-    storageUsed: "0 GB",
-    storagePercentage: 0,
-    searchQueries: 0,
+    totalSizeBytes: 0,
+    totalTags: 0,
+    totalFolders: 0,
   })
   const [recentFiles, setRecentFiles] = useState<FileItem[]>([])
   const [activities, setActivities] = useState<ActivityItem[]>([])
@@ -54,65 +41,67 @@ const DashboardPage = () => {
     try {
       setLoading(true)
 
-      // Fetch recent files from user's root folder
-      if (user?.rootFolderId) {
-        const filesResponse = await axiosInstance.get(`/folder/${user.rootFolderId}/items`)
-        const files = filesResponse.data.files || []
-        setRecentFiles(files.slice(0, 5)) // Get 5 most recent files
-
-        // Calculate stats from files
-        const totalFiles = files.length
-        const allTags = new Set<string>()
-        files.forEach((file: FileItem) => {
-          if (file.tags) {
-            file.tags.forEach((tag) => allTags.add(tag))
-          }
-        })
-
-        // Calculate storage (mock for now - you'd get this from your API)
-        const totalSize = files.reduce((sum: number, file: FileItem) => sum + (+file.size || 0), 0)
-        const storageGB = (totalSize / (1024 * 1024 * 1024)).toFixed(1)
-        const storagePercentage = Math.min((totalSize / (10 * 1024 * 1024 * 1024)) * 100, 100) // Assuming 10GB limit
-
-        setStats({
-          totalFiles,
-          activeTags: allTags.size,
-          storageUsed: `${storageGB} GB`,
-          storagePercentage: Math.round(storagePercentage),
-          searchQueries: 0, // You'd track this in your backend
-        })
-
-        // Generate popular tags
-        const tagCounts: { [key: string]: number } = {}
-        files.forEach((file: FileItem) => {
-          if (file.tags) {
-            file.tags.forEach((tag) => {
-              tagCounts[tag] = (tagCounts[tag] || 0) + 1
-            })
-          }
-        })
-
-        const sortedTags = Object.entries(tagCounts)
-          .sort(([, a], [, b]) => b - a)
-          .slice(0, 7)
-          .map(([name, count]) => ({ name, count }))
-
-        setPopularTags(sortedTags)
+      // Fetch user stats
+      try {
+        const statsResponse = await axiosInstance.get<UserStats>(`User/${user?.id}/stats`)
+        setStats(statsResponse.data)
+      } catch (error) {
+        console.error("Error fetching user stats:", error)
+        // Keep default stats if API fails
       }
 
-      // Mock activities for now - you'd get this from your API
-      setActivities([
-        { id: 1, action: "Uploaded", fileName: "document.pdf", time: "2 hours ago", userName: "You" },
-        { id: 2, action: "Tagged", fileName: "report.docx", time: "Yesterday", userName: "You" },
-        { id: 3, action: "Downloaded", fileName: "contract.pdf", time: "Yesterday", userName: "You" },
-        { id: 4, action: "Shared", fileName: "timeline.xlsx", time: "2 days ago", userName: "You" },
-        { id: 5, action: "Commented on", fileName: "budget.xlsx", time: "3 days ago", userName: "You" },
-      ])
+      // Fetch recent files from user's root folder
+      if (user?.rootFolderId) {
+        try {
+          const filesResponse = await axiosInstance.get(`/Folder/${user.rootFolderId}/items`)
+          const files = filesResponse.data.files || []
+          setRecentFiles(files.slice(0, 5)) // Get 5 most recent files
+
+          // Generate popular tags from recent files
+          const tagCounts: { [key: string]: number } = {}
+          files.forEach((file: FileItem) => {
+            if (file.tags) {
+              file.tags.forEach((tag) => {
+                tagCounts[tag] = (tagCounts[tag] || 0) + 1
+              })
+            }
+          })
+
+          const sortedTags = Object.entries(tagCounts)
+            .sort(([, a], [, b]) => b - a)
+            .slice(0, 7)
+            .map(([name, count]) => ({ name, count }))
+
+          setPopularTags(sortedTags)
+        } catch (error) {
+          console.error("Error fetching recent files:", error)
+        }
+      }
+
+      // Fetch recent activity
+      try {
+        const activityResponse = await axiosInstance.get<ActivityItem[]>(`/User/${user?.id}/recent-activity`)
+        console.log("Recent activity response:", activityResponse.data);
+        
+        setActivities(activityResponse.data)
+      } catch (error) {
+        console.error("Error fetching activity:", error)
+        // Fallback to empty activity if API fails
+        setActivities([])
+      }
     } catch (error) {
       console.error("Error fetching dashboard data:", error)
     } finally {
       setLoading(false)
     }
+  }
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return "0 Bytes"
+    const k = 1024
+    const sizes = ["Bytes", "KB", "MB", "GB", "TB"]
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return Number.parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i]
   }
 
   const cardStyle = {
@@ -143,6 +132,8 @@ const DashboardPage = () => {
     )
   }
 
+  const storagePercentage = Math.min((stats.totalSizeBytes / (10 * 1024 * 1024 * 1024)) * 100, 100) // Assuming 10GB limit
+
   return (
     <DashboardLayout>
       <div className="flex flex-col md:flex-row justify-between items-start mb-8 gap-4">
@@ -153,10 +144,10 @@ const DashboardPage = () => {
         />
 
         <div className="flex space-x-3">
-          <Link to="/upload">
+          <Link to="/files">
             <Button style={buttonStyle}>
-              <Upload className="mr-2 h-4 w-4" />
-              Upload Files
+              <FileText className="mr-2 h-4 w-4" />
+              Browse Files
             </Button>
           </Link>
         </div>
@@ -191,7 +182,7 @@ const DashboardPage = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold" style={{ color: "#3a5269" }}>
-              {stats.activeTags}
+              {stats.totalTags}
             </div>
           </CardContent>
         </Card>
@@ -207,12 +198,12 @@ const DashboardPage = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold" style={{ color: "#3a5269" }}>
-              {stats.storageUsed}
+              {formatFileSize(stats.totalSizeBytes)}
             </div>
             <div className="mt-2">
-              <Progress value={stats.storagePercentage} className="h-2" />
+              <Progress value={storagePercentage} className="h-2" />
               <p className="text-xs mt-1" style={{ color: "#4B6982" }}>
-                {stats.storagePercentage}% of 10 GB
+                {Math.round(storagePercentage)}% of 10 GB
               </p>
             </div>
           </CardContent>
@@ -221,7 +212,7 @@ const DashboardPage = () => {
         <Card style={cardStyle}>
           <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
             <CardTitle className="text-sm font-medium" style={{ color: "#3a5269" }}>
-              Search Queries
+              Total Folders
             </CardTitle>
             <div className="p-2 rounded-full" style={{ backgroundColor: "rgba(168, 235, 199, 0.1)" }}>
               <Search className="h-5 w-5" style={{ color: "#A8EBC7" }} />
@@ -229,7 +220,7 @@ const DashboardPage = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold" style={{ color: "#3a5269" }}>
-              {stats.searchQueries}
+              {stats.totalFolders}
             </div>
           </CardContent>
         </Card>
@@ -275,41 +266,41 @@ const DashboardPage = () => {
           <Card style={cardStyle}>
             <CardHeader className="pb-3">
               <CardTitle className="text-xl" style={{ color: "#3a5269" }}>
-                Activity
+                Recent Activity
               </CardTitle>
-              <CardDescription>Recent activities by you and your team</CardDescription>
+              <CardDescription>Your recent file activities</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {activities.map((activity) => (
-                  <div key={activity.id} className="flex items-start space-x-3">
-                    <div
-                      className="p-2 rounded-full flex-shrink-0"
-                      style={{ backgroundColor: "rgba(168, 235, 199, 0.1)" }}
-                    >
-                      {activity.action === "Uploaded" ? (
-                        <Upload className="h-4 w-4" style={{ color: "#4B6982" }} />
-                      ) : activity.action === "Tagged" ? (
-                        <Tags className="h-4 w-4" style={{ color: "#4B6982" }} />
-                      ) : activity.action === "Downloaded" ? (
-                        <ArrowUpRight className="h-4 w-4" style={{ color: "#4B6982" }} />
-                      ) : activity.action === "Shared" ? (
-                        <Users2 className="h-4 w-4" style={{ color: "#4B6982" }} />
-                      ) : (
-                        <Calendar className="h-4 w-4" style={{ color: "#4B6982" }} />
-                      )}
+                {activities.length > 0 ? (
+                  activities.map((activity, index) => (
+                    <div key={index} className="flex items-start space-x-3">
+                      <div
+                        className="p-2 rounded-full flex-shrink-0"
+                        style={{ backgroundColor: "rgba(168, 235, 199, 0.1)" }}
+                      >
+                        {activity.action === "Uploaded" ? (
+                          <ArrowUpRight className="h-4 w-4" style={{ color: "#4B6982" }} />
+                        ) : activity.action === "Downloaded" ? (
+                          <ArrowUpRight className="h-4 w-4" style={{ color: "#4B6982" }} />
+                        ) : (
+                          <Calendar className="h-4 w-4" style={{ color: "#4B6982" }} />
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-sm" style={{ color: "#3a5269" }}>
+                          <span className="font-medium">{activity.action}</span>{" "}
+                          <span className="font-medium">{activity.metadata}</span>
+                        </p>
+                        <p className="text-xs mt-1" style={{ color: "rgba(75, 105, 130, 0.6)" }}>
+                          {new Date(activity.createdAt).toLocaleString()}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm" style={{ color: "#3a5269" }}>
-                        <span className="font-medium">{activity.userName}</span> {activity.action.toLowerCase()}{" "}
-                        <span className="font-medium">{activity.fileName}</span>
-                      </p>
-                      <p className="text-xs mt-1" style={{ color: "rgba(75, 105, 130, 0.6)" }}>
-                        {activity.time}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+                  ))
+                ) : (
+                  <p style={{ color: "#4B6982" }}>No recent activity found.</p>
+                )}
               </div>
             </CardContent>
           </Card>

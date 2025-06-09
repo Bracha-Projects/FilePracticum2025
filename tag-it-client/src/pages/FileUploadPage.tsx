@@ -87,9 +87,10 @@ const FileUploadPage = () => {
 
   const uploadFile = async (fileObj: UploadFile, fileIndex: number, folderId: number) => {
     try {
+      const aiTags = await generateAITags(fileObj.file)
       // Step 1: Get presigned URL
       const presignedResponse = await axiosInstance.get<{ url: string }>(
-        `/file/presigned-url?fileName=${encodeURIComponent(fileObj.file.name)}&folderId=${folderId}`,
+        `/File/presigned-url?fileName=${encodeURIComponent(fileObj.file.name)}&folderId=${folderId}`,
       )
 
       const presignedUrl = presignedResponse.data.url
@@ -123,18 +124,17 @@ const FileUploadPage = () => {
           try {
             const fileMetadata = {
               fileName: fileObj.file.name,
-              fileType: fileObj.file.name.split(".").pop()?.toUpperCase() || "UNKNOWN",
+              fileType: fileObj.file.type,
               s3Key: s3Key,
               size: fileObj.file.size,
               folderId: folderId,
+              tags: aiTags,
+              ownerId: user?.id,
             }
 
-            const addFileResponse = await axiosInstance.post("/file/add-file", fileMetadata)
+            const addFileResponse = await axiosInstance.post("/File/add-file", fileMetadata)
             const createdFile = addFileResponse.data
 
-            // Step 5: Get AI-generated tags (simulate for now)
-            // In real implementation, you would call your AI service here
-            const aiTags = await generateAITags(fileObj.file)
 
             setUploadedFiles((prev) => {
               const updated = [...prev]
@@ -207,28 +207,28 @@ const FileUploadPage = () => {
   }
 
   const generateAITags = async (file: File): Promise<string[]> => {
-  const formData = new FormData()
-  formData.append("file", file)
+    const formData = new FormData()
+    formData.append("file", file)
 
-  try {
-    const response = await fetch("https://tag-it-ai.onrender.com/api/tag", {
-      method: "POST",
-      body: formData,
-    })
+    try {
+      const response = await fetch("https://tag-it-ai.onrender.com/api/tag", {
+        method: "POST",
+        body: formData,
+      })
 
-    if (!response.ok) {
-      throw new Error(`API error: ${response.statusText}`)
+      if (!response.ok) {
+        throw new Error(`API error: ${response.statusText}`)
+      }
+
+      const data = await response.json()
+      console.log("AI Tags Response:", data)
+      // Assume the response is something like: { tags: ["tag1", "tag2"] }
+      return data.tags || []
+    } catch (error) {
+      console.error("Failed to generate tags from API:", error)
+      return []
     }
-
-    const data = await response.json()
-
-    // Assume the response is something like: { tags: ["tag1", "tag2"] }
-    return data.tags || []
-  } catch (error) {
-    console.error("Failed to generate tags from API:", error)
-    return []
   }
-}
 
 
   const removeFile = (index: number) => {

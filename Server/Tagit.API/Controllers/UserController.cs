@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using Tagit.API.PostModels;
@@ -7,6 +8,7 @@ using Tagit.Core.DTOs;
 using Tagit.Core.Entities;
 using Tagit.Core.PostModels;
 using Tagit.Core.Services;
+using Tagit.Service.Services;
 
 namespace Tagit.API.Controllers
 {
@@ -18,12 +20,14 @@ namespace Tagit.API.Controllers
         private readonly IMapper _mapper;
         private readonly IJwtService _jwtService;
         private readonly IFolderService _folderService;
-        public UserController(IUserService userService, IMapper mapper, IJwtService jwtService, IFolderService folderService)
+        private readonly IActivityService _activityService;
+        public UserController(IUserService userService, IMapper mapper, IJwtService jwtService, IFolderService folderService, IActivityService activityService)
         {
             _userService = userService;
             _mapper = mapper;
             _jwtService = jwtService;
             _folderService = folderService;
+            _activityService = activityService;
         }
 
         [HttpPost("register")]
@@ -35,7 +39,7 @@ namespace Tagit.API.Controllers
                 var registeredUser = await _userService.RegisterUserAsync(userToRegister);
                 var folder = new FolderDTO
                 {
-                    Name = "Root Folder",
+                    Name = $"RootFolder_{registeredUser.Id}/",
                     OwnerId = registeredUser.Id,
                     ParentFolderId = null, // Assuming this is the root folder
                     CreatedAt = DateTime.UtcNow
@@ -59,16 +63,22 @@ namespace Tagit.API.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> AuthenticateUser([FromBody] UserLoginModel request)
         {
-            var user = await _userService.AuthenticateUserAsync(request.Email, request.Password);
+            var user = await _userService.GetUserByEmail(request.Email);
+            if (user == null)
+            {
+                // משתמש לא קיים
+                return NotFound("User not found");
+            }
+            var userDTO = await _userService.AuthenticateUserAsync(request.Email, request.Password);
             if (user == null)
             {
                 return Unauthorized();
             }
-            var token = _jwtService.GenerateJwtToken(_mapper.Map<User>(user));
+            var token = _jwtService.GenerateJwtToken(_mapper.Map<User>(userDTO));
             return Ok(new AuthResponse
             {
                 Token = token,
-                User = user
+                User = userDTO
             });
         }
 
@@ -84,12 +94,6 @@ namespace Tagit.API.Controllers
             return Ok(_mapper.Map<UserDTO>(user));
         }
 
-        [HttpGet("protected")]
-        [Authorize(Roles = "Admin")]
-        public IActionResult ProtectedAdminResource()
-        {
-            return Ok("This is an admin protected resource");
-        }
 
         [HttpPut("settings")]
         [Authorize] // דורש אימות
@@ -121,6 +125,20 @@ namespace Tagit.API.Controllers
             }
         }
 
+        [Authorize]
+        [HttpGet("{userId}/recent-activity")]
+        public async Task<IActionResult> GetRecentActivity(int userId, int limit = 10)
+        {
+            var results = await _activityService.GetRecentByUserAsync(userId, limit);
+            return Ok(results);
+        }
 
+        [Authorize]
+        [HttpGet("{userId}/stats")]
+        public async Task<IActionResult> GetUserStats(int userId)
+        {
+            var stats = await _userService.GetUserStatsAsync(userId);
+            return Ok(stats);
+        }
     }
 }

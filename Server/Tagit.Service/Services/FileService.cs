@@ -1,19 +1,20 @@
-﻿using System;
+﻿using Amazon.S3;
+using Amazon.S3.Model;
+using AutoMapper;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.StaticFiles;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Tagit.Core.DTOs;
+using Tagit.Core.Entities;
 using Tagit.Core.Repositories;
 using Tagit.Core.Services;
-using Tagit.Core.Entities;
 using File = Tagit.Core.Entities.File;
-using AutoMapper;
-using Amazon.S3;
-using Amazon.S3.Model;
-using Microsoft.AspNetCore.StaticFiles;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 
 namespace Tagit.Service.Services
 {
@@ -37,17 +38,17 @@ namespace Tagit.Service.Services
             try
             {
                 var fileKey = $"{folderPath.TrimEnd('/')}/{fileName}".TrimStart('/');
-
                 var request = new GetPreSignedUrlRequest
                 {
                     BucketName = "tagitbucket", // שם ה-Bucket שלך
                     Key = fileKey,
                     Verb = HttpVerb.PUT,
-                    Expires = DateTime.UtcNow.AddMinutes(300), // הגדל את הזמן
+                    Expires = DateTime.UtcNow.AddMinutes(15), // תוקף הקישור
                     ContentType = GetContentType(fileName) // התאם את סוג הקובץ בהתאם לצורך
                 };
 
                 string presignedUrl = _s3Client.GetPreSignedURL(request);
+                
                 return await Task.FromResult(presignedUrl);
             }
             catch (AmazonS3Exception ex)
@@ -93,6 +94,7 @@ namespace Tagit.Service.Services
         // Add file metadata to the database
         public async Task<FileDTO> AddFileAsync(FileDTO file)
         {
+            file.DateCreated = DateTime.UtcNow; // Set the creation date to now
             var uploadedFile = await _fileRepository.AddFileAsync(_mapper.Map<File>(file));
             return _mapper.Map<FileDTO>(uploadedFile);
         }

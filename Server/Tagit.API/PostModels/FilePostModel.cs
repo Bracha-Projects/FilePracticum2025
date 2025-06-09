@@ -8,10 +8,13 @@ namespace Tagit.Core.PostModels
 {
     public class FilePostModel
     {
-        public int OwnerId { get; set; }
         public string FileName { get; set; }
         public string FileType { get; set; }
-        public int FileSize { get; set; }
         public string S3Key { get; set; }
+        public int OwnerId { get; set; }
+        public int FolderId { get; set; }
+        public bool IsDeleted { get; set; } // דגל למחיקה רכה
+        public long Size { get; set; }
+        public List<string> Tags { get; set; }
     }
 }

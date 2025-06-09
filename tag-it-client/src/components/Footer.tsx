@@ -63,17 +63,17 @@ const Footer = () => {
               <h3 className="text-sm font-semibold text-tagit-darkblue mb-4">Company</h3>
               <ul className="space-y-3">
                 <li>
-                  <Link to="/underConstruction" className="text-sm text-tagit-blue hover:text-tagit-mint transition">
+                  <Link to="/contact" className="text-sm text-tagit-blue hover:text-tagit-mint transition">
                     Contact
                   </Link>
                 </li>
                 <li>
-                  <Link to="/underConstruction" className="text-sm text-tagit-blue hover:text-tagit-mint transition">
+                  <Link to="/privacy" className="text-sm text-tagit-blue hover:text-tagit-mint transition">
                     Privacy
                   </Link>
                 </li>
                 <li>
-                  <Link to="/underConstruction" className="text-sm text-tagit-blue hover:text-tagit-mint transition">
+                  <Link to="/terms" className="text-sm text-tagit-blue hover:text-tagit-mint transition">
                     Terms
                   </Link>
                 </li>

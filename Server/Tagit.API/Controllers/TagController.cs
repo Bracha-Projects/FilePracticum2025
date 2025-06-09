@@ -1,5 +1,7 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Tagit.API.Extensions;
 using Tagit.Core.DTOs;
 using Tagit.Core.Entities;
 using Tagit.Core.PostModels;
@@ -13,13 +15,16 @@ namespace Tagit.API.Controllers
     {
         private readonly ITagService _tagService;
         private readonly IMapper _mapper;
+        private readonly IActivityService _activityService;
 
-        public TagController(ITagService tagService, IMapper mapper)
+        public TagController(ITagService tagService, IMapper mapper, IActivityService activityService)
         {
             _tagService = tagService;
             _mapper = mapper;
+            _activityService = activityService;
         }
 
+        [Authorize]
         [HttpGet]
         public async Task<IActionResult> GetAllTags()
         {
@@ -27,6 +32,7 @@ namespace Tagit.API.Controllers
             return Ok(_mapper.Map<List<TagDTO>>(tags));
         }
 
+        [Authorize]
         [HttpGet("{id}")]
         public async Task<IActionResult> GetTagById(int id)
         {
@@ -38,14 +44,20 @@ namespace Tagit.API.Controllers
             return Ok(_mapper.Map<TagDTO>(tag));
         }
 
+        [Authorize]
         [HttpPost]
         public async Task<IActionResult> CreateTag([FromBody] TagPostModel tagPostModel)
         {
+            var userId = User.GetUserId();
+            if (!userId.HasValue)
+                return Unauthorized("User not authenticated");
             var tag = _mapper.Map<TagDTO>(tagPostModel);
             var createdTag = await _tagService.CreateTagAsync(tag);
+            await _activityService.LogActivityAsync(userId.Value, "Created Tag", createdTag.TagName);
             return CreatedAtAction(nameof(GetTagById), new { id = createdTag.Id }, _mapper.Map<TagDTO>(createdTag));
         }
 
+        [Authorize]
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateTag(int id, [FromBody] TagPostModel tagPostModel)
         {
@@ -59,9 +71,14 @@ namespace Tagit.API.Controllers
             return Ok(_mapper.Map<TagDTO>(updatedTag));
         }
 
+        [Authorize]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteTag(int id)
         {
+            var userId = User.GetUserId();
+            if (!userId.HasValue)
+                return Unauthorized("User not authenticated");
+
             var result = await _tagService.DeleteTagAsync(id);
             if (!result)
             {

@@ -14,7 +14,7 @@ namespace Tagit.Core.Services
         Task<FolderDTO> AddFolderAsync(FolderDTO folder);
         Task<FolderDTO> GetFolderByIdAsync(int folderId);
         Task<List<FolderDTO>> GetFoldersInParentAsync(int userId, int parentFolderId);
-        Task<FolderDTO> UpdateFolderAsync(FolderDTO folder);
+        Task<FolderDTO> UpdateFolderAsync(int folderId, FolderDTO updatedData);
         Task SoftDeleteFolderAsync(int folderId);
         Task<string> GetFolderPathByIdAsync(int folderId);
         Task<List<FolderDTO>> GetUserFoldersAsync(int userId); 

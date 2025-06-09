@@ -51,7 +51,6 @@ namespace Tagit.Data.Repositories
         // Update a folder record in the database
         public async Task<Folder> UpdateFolderAsync(Folder folder)
         {
-            _context.Folders.Update(folder);
             await _context.SaveChangesAsync();
             return folder;
         }

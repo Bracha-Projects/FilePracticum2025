@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Tagit.Core.DTOs;
 using Tagit.Core.Entities;
+using Tagit.Core.Models;
 using Tagit.Core.Repositories;
 using Tagit.Core.Services;
 using File = Tagit.Core.Entities.File;
@@ -37,7 +38,8 @@ namespace Tagit.Service.Services
             {
                 return null;
             }
-
+            user.LastLoginAt = DateTime.Now;
+            await _userRepository.UpdateAsync(user);
             // שימוש ב-PasswordHasher לאימות סיסמה
             var result = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, password);
             var userDTO = _mapper.Map<UserDTO>(user);
@@ -58,7 +60,7 @@ namespace Tagit.Service.Services
             var userToRegister = _mapper.Map<User>(user);
             userToRegister.PasswordHash = user.Password;
             userToRegister.PasswordHash = _passwordHasher.HashPassword(userToRegister, user.Password);
-            // Hash של הסיסמה לפני שמירה
+            userToRegister.CreatedAt = DateTime.UtcNow;
             await _userRepository.AddAsync(userToRegister);
             return _mapper.Map<UserDTO>(userToRegister);
         }
@@ -101,6 +103,9 @@ namespace Tagit.Service.Services
             return _mapper.Map<UserDTO>(await _userRepository.GetByIdAsync(id));
         }
 
-
+        public async Task<UserStatsModel> GetUserStatsAsync(int userId)
+        {
+            return await _userRepository.GetUserStatsAsync(userId);
+        }
     }
 }

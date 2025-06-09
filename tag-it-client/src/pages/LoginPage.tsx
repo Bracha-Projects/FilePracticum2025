@@ -11,7 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import LayoutWrapper from "@/components/LayoutWrapper"
 import Logo from "@/components/Logo"
 import { toast } from "sonner"
-import axios from "@/utils/axiosInstance"; 
+import axios from "@/utils/axiosInstance";
 import { AuthResponse } from "@/types/AuthResponse"
 import { LoginRequest } from "@/types/LoginRequest"
 import { useDispatch } from "react-redux";
@@ -40,19 +40,19 @@ const LoginPage = () => {
     try {
       const loginData: LoginRequest = { email, password };
       const response = await axios.post<AuthResponse>("/User/login", loginData);
-  
+
       const data = response.data;
       // Save token and user details in Redux
       dispatch(setUser({ user: data.user, token: data.token }));
       console.log("Login successful:", data);
-      
+
       // Save token in localStorage (for API authentication)
       localStorage.setItem("token", data.token);
-  
+
       toast.success("Success", {
         description: `Welcome back, ${data.user.firstName}!`,
       });
-  
+
       navigate("/dashboard");
     } catch (error: any) {
       if (error.response) {
@@ -66,6 +66,12 @@ const LoginPage = () => {
             toast.error("Forbidden: You don't have access to this resource", {
               description: "Access denied",
             });
+            break;
+          case 404:
+            toast.error("Email not found", {
+              description: "Redirecting you to registration",
+            });
+            navigate("/register");
             break;
           case 500:
             toast.error("Server error: Please try again later", {

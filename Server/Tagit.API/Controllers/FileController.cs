@@ -16,6 +16,9 @@ using Amazon.Runtime;
 using Microsoft.Extensions.Configuration;
 using Tagit.Core.PostModels;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
+using Tagit.API.Extensions;
+
 
 namespace Tagit.Controllers
 {
@@ -26,34 +29,35 @@ namespace Tagit.Controllers
         private readonly IFileService _fileService;
         private readonly IFolderService _folderService;
         private readonly ILogger<FileController> _logger;
-        private readonly IConfiguration _configuration;
         private readonly IMapper _mapper;
+        private readonly IActivityService _activityService;
 
-        public FileController(IConfiguration configuration, IFileService fileService, IFolderService folderService, ILogger<FileController> logger, IMapper mapper)
+        public FileController(IFileService fileService, IFolderService folderService, ILogger<FileController> logger, IMapper mapper, IActivityService activityService)
         {
-            _configuration = configuration;
             _fileService = fileService;
             _folderService = folderService;
             _logger = logger;
             _mapper = mapper;
+            _activityService = activityService;
         }
 
-        private int? GetUserId()
-        {
-            var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            return int.TryParse(userIdStr, out int userId) ? userId : (int?)null;
-        }
+        [Authorize]
 
+        [Authorize]
         [HttpGet("presigned-url")]
         public async Task<IActionResult> UploadFile([FromQuery] string fileName, [FromQuery] int? folderId)
         {
             try
             {
+                var userId = User.GetUserId();
+                if (userId == null) return Unauthorized();
+
                 string folderPath = "";
                 if (folderId != null)
                     folderPath = await _folderService.GetFolderPathByIdAsync(folderId.Value);
 
                 var presignedUrl = await _fileService.GetPresignedUrlAsync(fileName, folderPath);
+                await _activityService.LogActivityAsync(userId.Value, "Requested Upload URL", fileName);
                 return Ok(new { Url = presignedUrl });
             }
             catch (Exception ex)
@@ -63,10 +67,11 @@ namespace Tagit.Controllers
             }
         }
 
+        [Authorize]
         [HttpGet("{id}/download-url")]
         public async Task<IActionResult> GetDownloadUrl(int id)
         {
-            var userId = GetUserId();
+            var userId = User.GetUserId();
             if (userId == null)
                 return Unauthorized();
 
@@ -75,13 +80,15 @@ namespace Tagit.Controllers
                 return Forbid();
 
             var url = _fileService.GeneratePresignedDownloadUrl(file.S3Key);
+            await _activityService.LogActivityAsync(userId.Value, "Requested Download URL", file.FileName);
             return Ok(new { url });
         }
 
+        [Authorize]
         [HttpGet("{id}/viewing-url")]
         public async Task<IActionResult> GetViewUrl(int id)
         {
-            var userId = GetUserId();
+            var userId = User.GetUserId();
             if (userId == null)
                 return Unauthorized();
 
@@ -90,31 +97,30 @@ namespace Tagit.Controllers
                 return Forbid();
 
             var url = _fileService.GetPresignedUrlForView(file.S3Key);
+            await _activityService.LogActivityAsync(userId.Value, "Requested Viewing URL", file.FileName);
+
             return Ok(new { url });
         }
 
+        [Authorize]
         [HttpDelete("delete-file/{fileId}")]
         public async Task<IActionResult> DeleteFile(int fileId)
         {
-            var userId = GetUserId();
-            if (userId == null)
-                return Unauthorized();
-
-            var file = await _fileService.GetFileByIdAsync(fileId);
-            if (file == null || file.OwnerId != userId)
-                return Forbid();
+            var userId = User.GetUserId();
+            if (userId == null) return Unauthorized();
 
             var success = await _fileService.MarkFileAsDeletedAsync(fileId);
-            if (!success)
-                return NotFound(new { message = "File not found or already deleted." });
+            if (!success) return Forbid();
 
-            return Ok(new { message = "File marked as deleted" });
+            await _activityService.LogActivityAsync(userId.Value, "Deleted File", fileId.ToString());
+            return Ok();
         }
 
+        [Authorize]
         [HttpPost("add-file")]
         public async Task<IActionResult> AddFile([FromBody] FilePostModel file)
         {
-            var userId = GetUserId();
+            var userId = User.GetUserId();
             if (userId == null)
                 return Unauthorized();
 
@@ -125,13 +131,15 @@ namespace Tagit.Controllers
             fileDto.OwnerId = userId.Value;
 
             var result = await _fileService.AddFileAsync(fileDto);
+            await _activityService.LogActivityAsync(userId.Value, "Add File: ", file.FileName);
             return Ok(result);
         }
 
+        [Authorize]
         [HttpGet("user-files")]
         public async Task<IActionResult> GetUserFiles()
         {
-            var userId = GetUserId();
+            var userId = User.GetUserId();
             if (userId == null)
                 return Unauthorized("User ID is not valid");
 

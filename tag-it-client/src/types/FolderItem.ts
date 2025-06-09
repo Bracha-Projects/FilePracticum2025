@@ -1,9 +1,9 @@
 export interface FolderItem {
-    Id: number;
-    Name: string;
-    ParentFolderId: number;
-    OwnerId: number;
-    CreatedAt: Date;
-    UpdatedAt: Date;
-    IsDeleted: number
+    id: number;
+    name: string;
+    parentFolderId: number;
+    ownerId: number;
+    createdAt: Date;
+    updatedAt: Date;
+    isDeleted: number
 }

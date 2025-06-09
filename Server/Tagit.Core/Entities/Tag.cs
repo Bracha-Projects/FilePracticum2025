@@ -16,6 +16,10 @@ namespace Tagit.Core.Entities
         public string TagName { get; set; }
 
         // connections
-        public List<File> Files { get; set; } = new List<File>();
+        public List<File> Files { get; set; } 
+        public Tag()
+        {
+            Files = new List<File>();
+        }
     }
 }

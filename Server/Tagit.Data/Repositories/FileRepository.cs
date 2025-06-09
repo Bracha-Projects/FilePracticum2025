@@ -28,7 +28,7 @@ namespace Tagit.Data.Repositories
         // Get a file by its ID
         public async Task<File> GetFileByIdAsync(int fileId)
         {
-            return await _context.Files
+            return await _context.Files.Include(f => f.FileTags) 
                 .FirstOrDefaultAsync(f => f.Id == fileId && !f.IsDeleted); // Soft delete consideration
         }
 
@@ -44,7 +44,8 @@ namespace Tagit.Data.Repositories
         public async Task<List<File>> GetFilesByFolderAsync(int folderId)
         {
             return await _context.Files
-                .Where(f => f.FolderId == folderId && !f.IsDeleted)
+                .Include(f => f.FileTags) // אין FileTags – הולך ישר ל-Tags
+                 .Where(f => f.FolderId == folderId && !f.IsDeleted)
                 .ToListAsync();
         }
 

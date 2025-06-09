@@ -8,6 +8,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Tagit.API;
 using Tagit.API.Middlewares;
+using Tagit.API.Resolvers;
 using Tagit.Core.Entities;
 using Tagit.Core.Repositories;
 using Tagit.Core.Services;
@@ -50,7 +51,9 @@ builder.Services.AddScoped<IFileRepository, FileRepository>();
 builder.Services.AddScoped<ITagRepository, TagRepository>();
 builder.Services.AddScoped<ILogRepository, LogRepository>();
 builder.Services.AddScoped<IFolderRepository, FolderRepository>();
-builder.Services.AddScoped<ISearchRepository, SearchRepository>();  
+builder.Services.AddScoped<ISearchRepository, SearchRepository>();
+builder.Services.AddScoped<IActivityRepository, ActivityRepository>();
+builder.Services.AddScoped<TagsFromDtoResolver>();
 //Add dependencies to the Services
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IFileService, FileService>();
@@ -59,6 +62,7 @@ builder.Services.AddScoped<ITagService, TagService>();
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IFolderService, FolderService>();
 builder.Services.AddScoped<ISearchService, SearchService>();
+builder.Services.AddScoped<IActivityService, ActivityService>();
 //Add dependencies to DataContext
 var host = Environment.GetEnvironmentVariable("MYSQL_HOST");
 var databaseName = Environment.GetEnvironmentVariable("MYSQL_DATABASE");
@@ -68,9 +72,10 @@ var port = Environment.GetEnvironmentVariable("MYSQL_PORT") ?? "3306";
 
 var connectionString = $"Server={host};Port={port};Database={databaseName};Uid={user};Pwd={password};";
 Console.WriteLine(connectionString);
-builder.Services.AddDbContext<TagitDBContext>(options =>
+//builder.Services.AddDbContext<TagitDBContext>(options =>
+//    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
+builder.Services.AddDbContextPool<TagitDBContext>(options =>
     options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
-
 
 builder.Services.AddAutoMapper(typeof(MappingProfile));
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();

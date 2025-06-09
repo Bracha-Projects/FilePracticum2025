@@ -13,6 +13,6 @@ namespace Tagit.Core.PostModels
         public string LastName { get; set; }
         public string Email { get; set; }
         public string Password { get; set; }
-        public RoleType Role { get; set; }
+        public RoleType Role { get; set; } = RoleType.User;
     }
 }

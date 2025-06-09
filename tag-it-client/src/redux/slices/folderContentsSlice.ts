@@ -101,6 +101,7 @@ const folderContentsSlice = createSlice({
     })
     builder.addCase(fetchFolderContents.fulfilled, (state, action) => {
       state.loading = false
+      console.log("Folders from server in slice:", action.payload)  
       state.subFolders = action.payload.subFolders
       state.files = action.payload.files
     })
