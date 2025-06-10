@@ -5,7 +5,7 @@ import { Mail, Phone, MapPin, Clock, Send } from "lucide-react"
 import LayoutWrapper from "@/components/LayoutWrapper"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/Textarea"
+import { Textarea } from "@/components/ui/textarea"
 
 const ContactPage: React.FC = () => {
   const handleSubmit = (e: React.FormEvent) => {

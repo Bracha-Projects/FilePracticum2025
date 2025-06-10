@@ -59,6 +59,7 @@ const FileDropzone: React.FC<FileDropzoneProps> = ({ onFilesAdded, className }) 
 
     // Simulate file upload progress
     filesWithProgress.forEach((fileObj, index) => {
+      fileObj.status = "uploading"
       simulateUploadProgress(filesWithProgress.length - files.length + index)
     })
   }
