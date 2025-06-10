@@ -2,7 +2,7 @@ import axios from "axios"
 import { store } from "@/redux/store"
 
 const axiosInstance = axios.create({
-  baseURL:  process.env.NEXT_PUBLIC_API_URL,
+  baseURL:  import.meta.env.NEXT_PUBLIC_API_URL,
   headers: {
     "Content-Type": "application/json",
   },

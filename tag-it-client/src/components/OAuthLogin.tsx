@@ -25,7 +25,7 @@ const OAuthLogin: React.FC<OAuthLoginProps> = ({ onSuccess }) => {
         },
         onError: () => {
             toast.error("Google login failed")
-            setIsLoading(null) // הוסיפי שורה זו
+            setIsLoading(null) 
         },
     })
     const handleGoogleLogin = async () => {
