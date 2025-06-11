@@ -36,7 +36,7 @@ const TagManager: React.FC<TagManagerProps> = ({ fileId, initialTags, onTagsUpda
     setIsLoading(true)
 
     try {
-      const response = await axiosInstance.post<TagDTO>(`/api/files/${fileId}/tags`, {
+      const response = await axiosInstance.post<TagDTO>(`/api/Files/${fileId}/tags`, {
         tagName: tagToAdd,
       })
 
@@ -57,7 +57,7 @@ const TagManager: React.FC<TagManagerProps> = ({ fileId, initialTags, onTagsUpda
     setIsLoading(true)
 
     try {
-      await axiosInstance.delete(`/api/files/${fileId}/tags/${tagToRemove.id}`)
+      await axiosInstance.delete(`/api/Files/${fileId}/tags/${tagToRemove.id}`)
 
       const updatedTags = tags.filter((tag) => tag.id !== tagToRemove.id)
       setTags(updatedTags)
@@ -80,7 +80,7 @@ const TagManager: React.FC<TagManagerProps> = ({ fileId, initialTags, onTagsUpda
     setIsLoading(true)
 
     try {
-      const response = await axiosInstance.put<TagDTO>(`/api/files/${fileId}/tags/${tagToUpdate.id}`, {
+      const response = await axiosInstance.put<TagDTO>(`/api/Files/${fileId}/tags/${tagToUpdate.id}`, {
         tagName: newTagValue.trim(),
       })
 

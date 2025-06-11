@@ -69,7 +69,7 @@ const RegisterPage: React.FC = () => {
         Password: formData.password,
       };
 
-      const response = await axios.post<AuthResponse>("/User/register", userPostModel);
+      const response = await axios.post<AuthResponse>("/api/User/register", userPostModel);
 
       const data = response.data;
 

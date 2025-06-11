@@ -54,7 +54,7 @@ const OAuthLogin: React.FC<OAuthLoginProps> = ({ onSuccess }) => {
                 accessToken,
             }
 
-            const response = await axiosInstance.post<AuthResponse>("/auth/oauth-login", request)
+            const response = await axiosInstance.post<AuthResponse>("/api/auth/oauth-login", request)
 
             dispatch(
                 setUser({

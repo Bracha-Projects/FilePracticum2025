@@ -47,7 +47,7 @@ const FolderCard: React.FC<FolderCardProps> = ({
     }
 
     try {
-      await axiosInstance.put(`/Folder/${id}`, {
+      await axiosInstance.put(`/api/Folder/${id}`, {
         name: editName.trim(),
         ownerId: ownerId,
         parentFolderId: parentFolderId || null,
@@ -74,7 +74,7 @@ const FolderCard: React.FC<FolderCardProps> = ({
 
     setIsDeleting(true)
     try {
-      await axiosInstance.delete(`Folder/${id}`)
+      await axiosInstance.delete(`/api/Folder/${id}`)
 
       toast.success("Folder deleted successfully")
       // Refresh folder contents

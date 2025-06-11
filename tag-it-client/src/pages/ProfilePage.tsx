@@ -48,7 +48,7 @@ const ProfilePage = () => {
     if (!user) return
 
     try {
-      const response = await axiosInstance.get<UserStats>(`User/${user.id}/stats`)
+      const response = await axiosInstance.get<UserStats>(`/api/User/${user.id}/stats`)
       setUserStats(response.data)
     } catch (error) {
       console.error("Failed to fetch user stats:", error)
@@ -73,7 +73,7 @@ const ProfilePage = () => {
 
   const handleSave = async () => {
     try {
-      const response = await axiosInstance.put<UserType>("/User/settings", {
+      const response = await axiosInstance.put<UserType>("/api/User/settings", {
         firstName: formData.firstName,
         lastName: formData.lastName,
         email: formData.email,

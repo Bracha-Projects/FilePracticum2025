@@ -41,7 +41,7 @@ const FilePreviewModal = ({ isOpen, onClose, file, files = [], onDownload }: Fil
       setPreviewUrl(null)
 
       try {
-        const response = await axiosInstance.get(`/file/${file.id}/viewing-url`)
+        const response = await axiosInstance.get(`/File/${file.id}/viewing-url`)
         setPreviewUrl(response.data.url)
       } catch (error) {
         console.error("Error fetching preview URL:", error)

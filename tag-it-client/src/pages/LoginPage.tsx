@@ -40,7 +40,7 @@ const LoginPage = () => {
     setIsLoading(true)
     try {
       const loginData: LoginRequest = { email, password };
-      const response = await axios.post<AuthResponse>("/User/login", loginData);
+      const response = await axios.post<AuthResponse>("/api/User/login", loginData);
 
       const data = response.data;
       // Save token and user details in Redux
