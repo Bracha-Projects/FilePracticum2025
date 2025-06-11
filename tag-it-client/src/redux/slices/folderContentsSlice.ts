@@ -32,7 +32,7 @@ export const fetchFolderContents = createAsyncThunk<{ subFolders: FolderItem[]; 
   "folderContents/fetchFolderContents",
   async (folderId: number, { rejectWithValue }) => {
     try {
-      const response = await axiosInstance.get(`/Folder/${folderId}/items`)
+      const response = await axiosInstance.get(`/api/Folder/${folderId}/items`)
       return response.data
     } catch (error: any) {
       console.error("Error fetching folder contents:", error)
@@ -58,7 +58,7 @@ export const deleteFile = createAsyncThunk<number, number>(
   "folderContents/deleteFile",
   async (fileId: number, { rejectWithValue }) => {
     try {
-      await axiosInstance.delete(`api/File/delete-file/${fileId}`)
+      await axiosInstance.delete(`/api/File/delete-file/${fileId}`)
       return fileId
     } catch (error: any) {
       console.error("Error deleting file:", error)

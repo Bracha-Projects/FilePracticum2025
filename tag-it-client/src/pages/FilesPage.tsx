@@ -213,7 +213,7 @@ const FilesPage = () => {
   const allTags = useMemo(() => {
     const tags = new Set<string>()
     const filesToProcess = searchResults.length > 0 ? searchResults : files
-    filesToProcess.forEach((file) => {
+    filesToProcess.forEach((file: FileItem) => {
       if (file.tags) {
         file.tags.forEach((tag) => tags.add(tag))
       }
@@ -288,7 +288,7 @@ const FilesPage = () => {
   // Handle file preview
   const handlePreview = async (file: FileItem) => {
     try {
-      const response = await axiosInstance.get<{ url: string }>(`/api/file/${file.id}/viewing-url`)
+      const response = await axiosInstance.get<{ url: string }>(`/api/File/${file.id}/viewing-url`)
       const viewingUrl = response.data.url
       setPreviewFile(file)
       window.open(viewingUrl, "_blank")
@@ -301,7 +301,7 @@ const FilesPage = () => {
   // Handle file download
   const handleDownload = async (file: FileItem) => {
     try {
-      const response = await axiosInstance.get<{ url: string }>(`/api/file/${file.id}/download-url`)
+      const response = await axiosInstance.get<{ url: string }>(`/api/File/${file.id}/download-url`)
       const downloadUrl = response.data.url
 
       const link = document.createElement("a")
