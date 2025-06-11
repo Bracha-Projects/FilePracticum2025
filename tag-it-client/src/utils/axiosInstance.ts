@@ -2,7 +2,7 @@ import axios from "axios"
 import { store } from "@/redux/store"
 
 const axiosInstance = axios.create({
-  baseURL:  import.meta.env.NEXT_PUBLIC_API_URL,
+  baseURL:  import.meta.env.VITE_API_URL,
   headers: {
     "Content-Type": "application/json",
   },
@@ -13,7 +13,6 @@ axiosInstance.interceptors.request.use(
   (config) => {
     const state = store.getState()
     const token = state.user.token
-
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
