@@ -72,24 +72,17 @@ const DashboardPage = () => {
         console.log("Recent files response:", recentFilesResponse.data)
         setRecentFiles(recentFilesResponse.data || [])
 
-        // Generate popular tags from recent files
-        const tagCounts: { [key: string]: number } = {}
-        recentFilesResponse.data?.forEach((file: FileItem) => {
-          if (file.tags) {
-            file.tags.forEach((tag) => {
-              tagCounts[tag.tagName] = (tagCounts[tag.tagName] || 0) + 1
-            })
-          }
-        })
-
-        const sortedTags = Object.entries(tagCounts)
-          .sort(([, a], [, b]) => b - a)
-          .slice(0, 7)
-          .map(([name, count]) => ({ name, count }))
-
-        setPopularTags(sortedTags)
       } catch (error) {
         console.error("Error fetching recent files:", error)
+      }
+      //Fetch popular tags
+      try {
+        const tagsResponse = await axiosInstance.get<{ name: string; count: number }[]>(`/api/Tag/popular`)
+        console.log("Popular tags response:", tagsResponse.data)
+        setPopularTags(tagsResponse.data || [])
+      } catch (error) {
+        console.error("Error fetching popular tags:", error)
+        setPopularTags([])
       }
 
       // Fetch recent activity
