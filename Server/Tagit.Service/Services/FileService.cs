@@ -15,6 +15,7 @@ using Tagit.Core.Entities;
 using Tagit.Core.Repositories;
 using Tagit.Core.Services;
 using File = Tagit.Core.Entities.File;
+using Tag = Tagit.Core.Entities.Tag;
 
 namespace Tagit.Service.Services
 {
@@ -94,7 +95,7 @@ namespace Tagit.Service.Services
         // Add file metadata to the database
         public async Task<FileDTO> AddFileAsync(FileDTO file)
         {
-            file.DateCreated = DateTime.UtcNow; // Set the creation date to now
+            file.DateCreated = DateTime.UtcNow; 
             var uploadedFile = await _fileRepository.AddFileAsync(_mapper.Map<File>(file));
             return _mapper.Map<FileDTO>(uploadedFile);
         }
@@ -141,7 +142,11 @@ namespace Tagit.Service.Services
             var files = await _fileRepository.GetAllFilesByUserIdAsync(userId);
             return _mapper.Map<List<FileDTO>>(files);
         }
-
+        public async Task<List<FileDTO>> GetUserRecentFiles(int userId, int limit)
+        {
+            var files = await _fileRepository.RecentFiles(userId, limit);
+            return _mapper.Map<List<FileDTO>>(files);
+        }
         private string GetContentType(string fileName)
         {
             var provider = new FileExtensionContentTypeProvider();

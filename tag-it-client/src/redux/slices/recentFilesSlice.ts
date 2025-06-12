@@ -21,7 +21,7 @@ export const fetchRecentFiles = createAsyncThunk<FileItem[], { userId: number; l
   "recentFiles/fetchRecentFiles",
   async ({ userId, limit = 10 }, { rejectWithValue }) => {
     try {
-      const response = await axiosInstance.get<FileItem[]>(`/api/user/${userId}/recent-files?limit=${limit}`)
+      const response = await axiosInstance.get<FileItem[]>(`/api/File/${userId}/recent-files?limit=${limit}`)
       return response.data
     } catch (error: any) {
       console.error("Error fetching recent files:", error)

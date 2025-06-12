@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Tagit.Core.Entities;
 using Tagit.Core.Models;
+using File = Tagit.Core.Entities.File;
 
 namespace Tagit.Core.Repositories
 {

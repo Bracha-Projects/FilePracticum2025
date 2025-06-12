@@ -1,3 +1,5 @@
+import { Tag } from "./Tag"
+
 export interface FileItem {
   id: number
   fileName: string
@@ -9,5 +11,5 @@ export interface FileItem {
   size: string,
   folderId: number,
   isDeleted: boolean,
-  tags: string[]
+  tags: Tag[]
 }

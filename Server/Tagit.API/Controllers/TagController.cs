@@ -16,12 +16,16 @@ namespace Tagit.API.Controllers
         private readonly ITagService _tagService;
         private readonly IMapper _mapper;
         private readonly IActivityService _activityService;
+        private readonly ILogger<TagController> _logger;
+        private readonly IFileService _fileService;
 
-        public TagController(ITagService tagService, IMapper mapper, IActivityService activityService)
+        public TagController(ITagService tagService, IMapper mapper, IActivityService activityService, ILogger<TagController> logger, IFileService fileService)
         {
             _tagService = tagService;
             _mapper = mapper;
             _activityService = activityService;
+            _logger = logger;
+            _fileService = fileService;
         }
 
         [Authorize]
@@ -44,31 +48,69 @@ namespace Tagit.API.Controllers
             return Ok(_mapper.Map<TagDTO>(tag));
         }
 
+
+        [Authorize]
+        [HttpGet("{fileId}/tags")]
+        public async Task<IActionResult> GetTagsByFileId(int fileId)
+        {
+            var file = await _fileService.GetFileByIdAsync(fileId);
+            return Ok(file.Tags);
+        }
+
+        [Authorize]
+        [HttpGet("user/{userId}")]
+        public async Task<IActionResult> GetTagsByUserId(int userId)
+        {
+            var tags = await _tagService.GetTagsByUserIdAsync(userId);
+            return Ok(tags);
+        }
+
+        [Authorize]
+        [HttpGet("popular")]
+        public async Task<IActionResult> GetPopularTags()
+        {
+            var tags = await _tagService.GetPopularTagsAsync();
+            return Ok(tags);
+        }
+
         [Authorize]
         [HttpPost]
-        public async Task<IActionResult> CreateTag([FromBody] TagPostModel tagPostModel)
+        public async Task<IActionResult> CreateTag([FromBody] TagPostModel tagDto)
+        {
+
+            var userId = User.GetUserId();
+            if (!userId.HasValue)
+                return Unauthorized("User not authenticated");
+
+            if (tagDto == null || string.IsNullOrWhiteSpace(tagDto.TagName))
+                return BadRequest("Invalid tag data.");
+
+            var createdTag = await _tagService.CreateTagAsync(tagDto.TagName, tagDto.FileId);
+            if (createdTag == null)
+                return BadRequest("Failed to create tag.");
+            await _activityService.LogActivityAsync(userId.Value, "Created Tag", createdTag.TagName);
+            return Ok(createdTag);
+        }
+
+        [Authorize]
+        [HttpPut("{tagId}")]
+        public async Task<IActionResult> UpdateTag(int tagId, [FromBody] TagPostModel tagDto)
         {
             var userId = User.GetUserId();
             if (!userId.HasValue)
                 return Unauthorized("User not authenticated");
-            var tag = _mapper.Map<TagDTO>(tagPostModel);
-            var createdTag = await _tagService.CreateTagAsync(tag);
-            await _activityService.LogActivityAsync(userId.Value, "Created Tag", createdTag.TagName);
-            return CreatedAtAction(nameof(GetTagById), new { id = createdTag.Id }, _mapper.Map<TagDTO>(createdTag));
-        }
 
-        [Authorize]
-        [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateTag(int id, [FromBody] TagPostModel tagPostModel)
-        {
-            var tag = _mapper.Map<TagDTO>(tagPostModel);
-            tag.Id = id;
+            if (tagDto == null || string.IsNullOrWhiteSpace(tagDto.TagName))
+                return BadRequest("Invalid tag data.");
+
+            var tag = _mapper.Map<TagDTO>(tagDto);
+            tag.Id = tagId;
+
             var updatedTag = await _tagService.UpdateTagAsync(tag);
             if (updatedTag == null)
-            {
                 return NotFound();
-            }
-            return Ok(_mapper.Map<TagDTO>(updatedTag));
+
+            return Ok(updatedTag);
         }
 
         [Authorize]
@@ -86,7 +128,10 @@ namespace Tagit.API.Controllers
             }
             return NoContent();
         }
+
     }
 
 }
+
+
 

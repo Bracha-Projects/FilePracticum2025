@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Tagit.Core.Entities;
 using Tagit.Core.Models;
 using Tagit.Core.Repositories;
+using File = Tagit.Core.Entities.File;
 
 namespace Tagit.Data.Repositories
 {
@@ -69,5 +70,7 @@ namespace Tagit.Data.Repositories
         {
             return await _context.Users.FirstOrDefaultAsync(u => u.Provider == provider && u.ProviderId == providerId);
         }
+
+        
     }
 }

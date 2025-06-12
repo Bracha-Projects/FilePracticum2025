@@ -1,6 +1,5 @@
 ﻿using AutoMapper;
 using Tagit.API.PostModels;
-using Tagit.API.Resolvers;
 using Tagit.Core.DTOs;
 using Tagit.Core.Entities;
 using Tagit.Core.PostModels;
@@ -15,11 +14,14 @@ namespace Tagit.API
             CreateMap<User, UserDTO>().ReverseMap();
             CreateMap<UserPostModel, UserDTO>().ReverseMap();
             CreateMap<File, FileDTO>()
-                .ForMember(dest => dest.Tags, opt => opt.MapFrom(src => src.FileTags.Select(t => t.TagName).ToList()));
+            .ForMember(dest => dest.Tags, opt => opt.MapFrom(src => src.FileTags));
             CreateMap<FileDTO, File>()
                  .ForMember(dest => dest.FileTags, opt => opt.MapFrom<TagsFromDtoResolver>());
-            CreateMap<FilePostModel, FileDTO>().ReverseMap();
-            CreateMap<TagDTO, TagPostModel>().ReverseMap();
+            CreateMap<FilePostModel, FileDTO>()
+                .ForMember(dest => dest.Tags,
+                    opt => opt.MapFrom(src =>
+                        src.Tags.Select(tagName => new TagDTO { TagName = tagName }).ToList()
+                    )); CreateMap<TagDTO, TagPostModel>().ReverseMap();
             
             CreateMap<Tag, TagDTO>().ReverseMap();
 

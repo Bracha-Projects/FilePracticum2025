@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Tagit.Core.DTOs;
 using Tagit.Core.Entities;
+using Tagit.Core.Repositories;
 using File = Tagit.Core.Entities.File;
 
 namespace Tagit.Core.Services
@@ -19,5 +20,7 @@ namespace Tagit.Core.Services
         Task<FileDTO> UpdateFileAsync(FileDTO file);
         Task<bool> MarkFileAsDeletedAsync(int fileId);
         Task<List<FileDTO>> GetAllFilesByUserIdAsync(int userId);
+        Task<List<FileDTO>> GetUserRecentFiles(int userId, int limit);
+
     }
 }

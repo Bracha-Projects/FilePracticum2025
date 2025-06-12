@@ -8,7 +8,6 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Tagit.API;
 using Tagit.API.Middlewares;
-using Tagit.API.Resolvers;
 using Tagit.Core.Entities;
 using Tagit.Core.Repositories;
 using Tagit.Core.Services;

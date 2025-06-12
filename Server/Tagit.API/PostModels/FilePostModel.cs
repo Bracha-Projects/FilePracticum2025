@@ -13,7 +13,7 @@ namespace Tagit.Core.PostModels
         public string S3Key { get; set; }
         public int OwnerId { get; set; }
         public int FolderId { get; set; }
-        public bool IsDeleted { get; set; } // דגל למחיקה רכה
+        public bool IsDeleted { get; set; } 
         public long Size { get; set; }
         public List<string> Tags { get; set; }
     }

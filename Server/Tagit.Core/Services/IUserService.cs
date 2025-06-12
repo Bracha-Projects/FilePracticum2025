@@ -18,7 +18,5 @@ namespace Tagit.Core.Services
         Task<UserDTO> GetUserByEmail(string email);
         Task<UserDTO> GetUserById(int id);
         Task<UserStatsModel> GetUserStatsAsync(int userId);
-
-        // Task<List<File>> GetUserFilesAsync(int userId, string searchQuery, TagDTO filterTag);
     }
 }

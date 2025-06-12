@@ -1,23 +1,24 @@
-﻿using Amazon.S3;
+﻿using Amazon.Runtime;
+using Amazon.S3;
 using Amazon.S3.Model;
+using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.StaticFiles;
-using Tagit.Core.Entities;
-using Tagit.Core.Services;
-using System;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
-using File = Tagit.Core.Entities.File;
-using System.Security.Claims;
-using Tagit.API.PostModels;
-using AutoMapper;
-using Tagit.Core.DTOs;
-using Amazon.Runtime;
-using Microsoft.Extensions.Configuration;
-using Tagit.Core.PostModels;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using System;
+using System.Security.Claims;
+using System.Threading.Tasks;
 using Tagit.API.Extensions;
+using Tagit.API.PostModels;
+using Tagit.Core.DTOs;
+using Tagit.Core.Entities;
+using Tagit.Core.PostModels;
+using Tagit.Core.Services;
+using Tagit.Service.Services;
+using File = Tagit.Core.Entities.File;
 
 
 namespace Tagit.Controllers
@@ -146,5 +147,15 @@ namespace Tagit.Controllers
             var files = await _fileService.GetAllFilesByUserIdAsync(userId.Value);
             return Ok(files);
         }
+
+
+        [Authorize]
+        [HttpGet("{userId}/recent-files")]
+        public async Task<IActionResult> GetUserRecentFiles(int userId, int limit)
+        {
+            var recentFiles = await _fileService.GetUserRecentFiles(userId, limit);
+            return Ok(recentFiles);
+        }
+
     }
 }

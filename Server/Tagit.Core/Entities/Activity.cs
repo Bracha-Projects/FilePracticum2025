@@ -11,11 +11,11 @@ namespace Tagit.Core.Entities
         public int Id { get; set; }
 
         public int UserId { get; set; }
-        public string Action { get; set; } // לדוגמה: "uploaded file", "deleted folder", וכו'
-        public string? Metadata { get; set; } // JSON או טקסט חופשי אם תרצי
+        public string Action { get; set; } 
+        public string? Metadata { get; set; } 
 
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime CreatedAt { get; set; }
 
-        public User? User { get; set; } // ניווט אופציונלי 
+        public User? User { get; set; } 
     }
 }

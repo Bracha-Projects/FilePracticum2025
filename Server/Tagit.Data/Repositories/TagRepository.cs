@@ -17,6 +17,14 @@ namespace Tagit.Data.Repositories
         {
             _context = context;
         }
+        public async Task<List<Tag>> GetTagsByUserIdAsync(int userId)
+        {
+            return await _context.Files
+                .Where(f => f.OwnerId == userId)
+                .SelectMany(f => f.FileTags)
+                .Distinct()
+                .ToListAsync();
+        }
 
         public async Task<List<Tag>> GetAllTagsAsync()
         {
@@ -60,6 +68,21 @@ namespace Tagit.Data.Repositories
             _context.Tags.Remove(tag);
             await _context.SaveChangesAsync();
             return true;
+        }
+
+        public async Task<IEnumerable<Tag>> GetPopularTagsAsync()
+        {
+            var popularTags = await _context.Tags
+                .Select(t => new
+                {
+                    Tag = t,
+                    UsageCount = t.Files.Count
+                })
+                .OrderByDescending(t => t.UsageCount)
+                .Take(20)
+                .Select(t => t.Tag) 
+                .ToListAsync();
+            return popularTags;
         }
     }
 }

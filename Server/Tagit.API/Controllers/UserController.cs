@@ -140,5 +140,8 @@ namespace Tagit.API.Controllers
             var stats = await _userService.GetUserStatsAsync(userId);
             return Ok(stats);
         }
+
+        
+
     }
 }

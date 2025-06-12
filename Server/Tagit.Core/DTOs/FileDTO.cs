@@ -16,8 +16,8 @@ namespace Tagit.Core.DTOs
         public DateTime LastModified { get; set; } 
         public DateTime DateCreated { get; set; }
         public int FolderId { get; set; }
-        public bool IsDeleted { get; set; } // דגל למחיקה רכה
-        public long Size { get; set; } 
-        public List<string> Tags { get; set; }
+        public bool IsDeleted { get; set; } 
+        public long Size { get; set; }
+        public List<TagDTO> Tags { get; set; }
     }
 }

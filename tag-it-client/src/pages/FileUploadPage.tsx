@@ -3,28 +3,31 @@
 import type React from "react"
 
 import { useState, useCallback } from "react"
-import { Upload, X, CheckCircle2, FileText, Loader2, Tag, Plus } from "lucide-react"
+import { Upload, X, CheckCircle2, FileText, Loader2, Tag, Plus, Edit2, RefreshCw } from "lucide-react"
 import DashboardLayout from "@/layouts/DashboardLayout"
 import PageHeading from "@/components/PageHeading"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import { useAppDispatch, useAppSelector } from "@/redux/hooks"
 import { toast } from "sonner"
 import axiosInstance from "@/utils/axiosInstance"
 import { fetchFolderContents } from "@/redux/slices/folderContentsSlice"
+import axios from "axios"
+import type { Tag as TagType } from "@/types/Tag"
 
 interface UploadFile {
   file: File
   progress: number
   status: "uploading" | "complete" | "error"
-  tags: string[]
+  tags: TagType[]
   id?: number
+  editingTag?: number
+  newTagValue?: string
 }
 
-const FileUploadPage = () => {
+const UploadPage = () => {
   const dispatch = useAppDispatch()
   const user = useAppSelector((state) => state.user.user)
   const currentFolderId = useAppSelector((state) => state.folderContents.currentFolderId)
@@ -32,6 +35,7 @@ const FileUploadPage = () => {
   const [isHovering, setIsHovering] = useState(false)
   const [uploadedFiles, setUploadedFiles] = useState<UploadFile[]>([])
   const [newTag, setNewTag] = useState("")
+  const [isRefreshingTags, setIsRefreshingTags] = useState<number | null>(null)
 
   const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault()
@@ -73,7 +77,7 @@ const FileUploadPage = () => {
       file,
       progress: 0,
       status: "uploading" as const,
-      tags: [] as string[],
+      tags: [] as TagType[],
     }))
 
     setUploadedFiles((prev) => [...prev, ...filesWithProgress])
@@ -87,7 +91,6 @@ const FileUploadPage = () => {
 
   const uploadFile = async (fileObj: UploadFile, fileIndex: number, folderId: number) => {
     try {
-      const aiTags = await generateAITags(fileObj.file)
       // Step 1: Get presigned URL
       const presignedResponse = await axiosInstance.get<{ url: string }>(
         `/api/File/presigned-url?fileName=${encodeURIComponent(fileObj.file.name)}&folderId=${folderId}`,
@@ -122,19 +125,24 @@ const FileUploadPage = () => {
 
           // Step 4: Add file metadata to database
           try {
+            // Step 5: Get AI-generated tags
+            const aiTagNames = await generateAITags(fileObj.file)
+
             const fileMetadata = {
               fileName: fileObj.file.name,
-              fileType: fileObj.file.type,
+              fileType: fileObj.file.name.split(".").pop()?.toUpperCase() || "UNKNOWN",
               s3Key: s3Key,
               size: fileObj.file.size,
               folderId: folderId,
-              tags: aiTags,
               ownerId: user?.id,
+              tags: aiTagNames,
             }
 
             const addFileResponse = await axiosInstance.post("/api/File/add-file", fileMetadata)
             const createdFile = addFileResponse.data
 
+            // Fetch the actual tags with IDs from the server
+            const tagsResponse = await axiosInstance.get<TagType[]>(`/api/Tag/${createdFile.id}/tags`)
 
             setUploadedFiles((prev) => {
               const updated = [...prev]
@@ -143,7 +151,7 @@ const FileUploadPage = () => {
                   ...updated[fileIndex],
                   progress: 100,
                   status: "complete",
-                  tags: aiTags,
+                  tags: tagsResponse.data,
                   id: createdFile.id,
                 }
               }
@@ -206,75 +214,192 @@ const FileUploadPage = () => {
     }
   }
 
+  // AI tag generation
   const generateAITags = async (file: File): Promise<string[]> => {
     const formData = new FormData()
     formData.append("file", file)
 
     try {
-      const response = await fetch("https://tag-it-ai.onrender.com/api/tag", {
-        method: "POST",
-        body: formData,
+      const response = await axios.post("https://tag-it-ai.onrender.com/api/tag", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
       })
 
-      if (!response.ok) {
-        throw new Error(`API error: ${response.statusText}`)
-      }
-
-      const data = await response.json()
-      console.log("AI Tags Response:", data)
-      // Assume the response is something like: { tags: ["tag1", "tag2"] }
-      return data.tags || []
-    } catch (error) {
-      console.error("Failed to generate tags from API:", error)
+      // Assuming the API returns: { tags: ["tag1", "tag2"] }
+      return response.data.tags || []
+    } catch (error: any) {
+      console.error("Failed to generate AI tags:", error)
+      toast.error("Failed to generate AI tags")
       return []
     }
   }
-
 
   const removeFile = (index: number) => {
     setUploadedFiles((prev) => prev.filter((_, i) => i !== index))
   }
 
-  const addTag = (fileIndex: number) => {
-    if (!newTag.trim()) return
+  const addTag = async (fileIndex: number, tagName: string) => {
+    if (!tagName.trim()) return
 
-    setUploadedFiles((prev) => {
-      const updated = [...prev]
-      if (updated[fileIndex] && !updated[fileIndex].tags.includes(newTag.trim())) {
-        updated[fileIndex] = {
-          ...updated[fileIndex],
-          tags: [...updated[fileIndex].tags, newTag.trim()],
+    const fileObj = uploadedFiles[fileIndex]
+    if (!fileObj.id) return
+
+    try {
+      const response = await axiosInstance.post<TagType>(`/api/Tag`, {
+        tagName: tagName.trim(),
+        fileId: fileObj.id,
+      })
+
+      setUploadedFiles((prev) => {
+        const updated = [...prev]
+        if (updated[fileIndex]) {
+          updated[fileIndex] = {
+            ...updated[fileIndex],
+            tags: [...updated[fileIndex].tags, response.data],
+          }
         }
-      }
-      return updated
-    })
-    setNewTag("")
+        return updated
+      })
+
+      setNewTag("")
+      toast.success("Tag added successfully")
+    } catch (error) {
+      console.error("Error adding tag:", error)
+      toast.error("Failed to add tag")
+    }
   }
 
-  const removeTag = (fileIndex: number, tagToRemove: string) => {
+  const removeTag = async (fileIndex: number, tagToRemove: TagType) => {
+    const fileObj = uploadedFiles[fileIndex]
+    if (!fileObj.id) return
+
+    try {
+      await axiosInstance.delete(`/api/Tag/${tagToRemove.id}`)
+
+      setUploadedFiles((prev) => {
+        const updated = [...prev]
+        if (updated[fileIndex]) {
+          updated[fileIndex] = {
+            ...updated[fileIndex],
+            tags: updated[fileIndex].tags.filter((tag) => tag.id !== tagToRemove.id),
+          }
+        }
+        return updated
+      })
+
+      toast.success("Tag removed successfully")
+    } catch (error) {
+      console.error("Error removing tag:", error)
+      toast.error("Failed to remove tag")
+    }
+  }
+
+  const startEditingTag = (fileIndex: number, tagIndex: number, currentValue: string) => {
     setUploadedFiles((prev) => {
       const updated = [...prev]
       if (updated[fileIndex]) {
         updated[fileIndex] = {
           ...updated[fileIndex],
-          tags: updated[fileIndex].tags.filter((tag) => tag !== tagToRemove),
+          editingTag: tagIndex,
+          newTagValue: currentValue,
         }
       }
       return updated
     })
   }
 
-  const saveTags = async (fileIndex: number) => {
+  const updateTag = async (fileIndex: number, tagIndex: number, newValue: string) => {
+    if (!newValue.trim()) return
+
     const fileObj = uploadedFiles[fileIndex]
     if (!fileObj.id) return
 
+    const tagToUpdate = fileObj.tags[tagIndex]
+    if (!tagToUpdate) return
+
     try {
-      // Here you would call your API to update file tags
-      // await axiosInstance.put(`/file/${fileObj.id}/tags`, { tags: fileObj.tags })
-      toast.success("Tags updated successfully")
+      const response = await axiosInstance.put<TagType>(`/api/Tag/${tagToUpdate.id}`, {
+        tagName: newValue.trim(),
+        fileId: fileObj.id,
+      })
+
+      setUploadedFiles((prev) => {
+        const updated = [...prev]
+        if (updated[fileIndex]) {
+          const newTags = [...updated[fileIndex].tags]
+          newTags[tagIndex] = response.data
+          updated[fileIndex] = {
+            ...updated[fileIndex],
+            tags: newTags,
+            editingTag: undefined,
+            newTagValue: undefined,
+          }
+        }
+        return updated
+      })
+
+      toast.success("Tag updated successfully")
     } catch (error) {
-      console.error("Error updating tags:", error)
-      toast.error("Failed to update tags")
+      console.error("Error updating tag:", error)
+      toast.error("Failed to update tag")
+
+      // Reset editing state
+      setUploadedFiles((prev) => {
+        const updated = [...prev]
+        if (updated[fileIndex]) {
+          updated[fileIndex] = {
+            ...updated[fileIndex],
+            editingTag: undefined,
+            newTagValue: undefined,
+          }
+        }
+        return updated
+      })
+    }
+  }
+
+  const cancelEditingTag = (fileIndex: number) => {
+    setUploadedFiles((prev) => {
+      const updated = [...prev]
+      if (updated[fileIndex]) {
+        updated[fileIndex] = {
+          ...updated[fileIndex],
+          editingTag: undefined,
+          newTagValue: undefined,
+        }
+      }
+      return updated
+    })
+  }
+
+  const refreshTags = async (fileIndex: number) => {
+    const fileObj = uploadedFiles[fileIndex]
+    if (!fileObj.id) return
+
+    setIsRefreshingTags(fileIndex)
+
+    try {
+      // Call AI service to regenerate tags
+      const response = await axiosInstance.post<TagType[]>(`/api/File/${fileObj.id}/regenerate-tags`)
+
+      setUploadedFiles((prev) => {
+        const updated = [...prev]
+        if (updated[fileIndex]) {
+          updated[fileIndex] = {
+            ...updated[fileIndex],
+            tags: response.data,
+          }
+        }
+        return updated
+      })
+
+      toast.success("Tags refreshed successfully")
+    } catch (error) {
+      console.error("Failed to refresh tags:", error)
+      toast.error("Failed to refresh tags")
+    } finally {
+      setIsRefreshingTags(null)
     }
   }
 
@@ -318,10 +443,10 @@ const FileUploadPage = () => {
         {uploadedFiles.length > 0 && (
           <div className="space-y-3 animate-fade-in">
             <h3 className="text-sm font-medium text-[#4B6982]">Uploaded Files</h3>
-            <div className="rounded-lg border border-[#4B6982]/20 overflow-hidden shadow-md">
+            <div className="rounded-lg border border-[#4B6982]/20 overflow-hidden shadow-md bg-white">
               <div className="divide-y divide-[#4B6982]/10">
                 {uploadedFiles.map((fileObj, index) => (
-                  <div key={index} className="p-4">
+                  <div key={index} className="p-4 bg-white">
                     <div className="flex items-start space-x-3">
                       <div className="p-2 bg-[#A8EBC7]/20 rounded-lg">
                         <FileText className="h-5 w-5 text-[#4B6982]" />
@@ -340,11 +465,9 @@ const FileUploadPage = () => {
                         </div>
 
                         <div className="flex items-center mt-1">
-                          <Progress
-                            value={fileObj.progress}
-                            className="h-1.5 flex-1"
-                            indicatorClassName="bg-[#A8EBC7]"
-                          />
+                          <div className="h-1.5 flex-1 bg-gray-100 rounded-full overflow-hidden">
+                            <div className="h-full bg-[#A8EBC7]" style={{ width: `${fileObj.progress}%` }} />
+                          </div>
                           <span className="ml-2 text-xs text-[#4B6982]/60 min-w-[40px] text-right">
                             {fileObj.progress}%
                           </span>
@@ -369,30 +492,91 @@ const FileUploadPage = () => {
                           <div className="text-xs text-[#4B6982]/60">{Math.round(fileObj.file.size / 1024)} KB</div>
                         </div>
 
-                        {/* Tags Section */}
+                        {/* Tags Section - Only show when upload is complete */}
                         {fileObj.status === "complete" && (
-                          <div className="mt-3 space-y-2">
-                            <div className="flex items-center gap-2">
-                              <Tag className="h-4 w-4 text-[#4B6982]" />
-                              <span className="text-sm font-medium text-[#4B6982]">AI Generated Tags:</span>
+                          <div className="mt-3 space-y-2 bg-gray-50 p-3 rounded-lg">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <Tag className="h-4 w-4 text-[#4B6982]" />
+                                <span className="text-sm font-medium text-[#4B6982]">Tags:</span>
+                              </div>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 px-2 text-xs"
+                                onClick={() => refreshTags(index)}
+                                disabled={isRefreshingTags === index}
+                              >
+                                {isRefreshingTags === index ? (
+                                  <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                                ) : (
+                                  <RefreshCw className="h-3 w-3 mr-1" />
+                                )}
+                                Refresh Tags
+                              </Button>
                             </div>
 
                             <div className="flex flex-wrap gap-1">
-                              {fileObj.tags.map((tag, tagIndex) => (
-                                <Badge
-                                  key={tagIndex}
-                                  variant="secondary"
-                                  className="bg-[#A8EBC7]/20 text-[#4B6982] hover:bg-[#A8EBC7]/30"
-                                >
-                                  {tag}
-                                  <button
-                                    onClick={() => removeTag(index, tag)}
-                                    className="ml-1 text-[#4B6982]/60 hover:text-red-500"
+                              {fileObj.tags.length > 0 ? (
+                                fileObj.tags.map((tag, tagIndex) => (
+                                  <Badge
+                                    key={tagIndex}
+                                    variant="secondary"
+                                    className="flex items-center bg-white border border-gray-200 text-[#4B6982] hover:bg-gray-50 group"
                                   >
-                                    <X className="h-3 w-3" />
-                                  </button>
-                                </Badge>
-                              ))}
+                                    {fileObj.editingTag === tagIndex ? (
+                                      <Input
+                                        value={fileObj.newTagValue || tag.tagName}
+                                        onChange={(e) => {
+                                          setUploadedFiles((prev) => {
+                                            const updated = [...prev]
+                                            if (updated[index]) {
+                                              updated[index] = {
+                                                ...updated[index],
+                                                newTagValue: e.target.value,
+                                              }
+                                            }
+                                            return updated
+                                          })
+                                        }}
+                                        onBlur={() => updateTag(index, tagIndex, fileObj.newTagValue || tag.tagName)}
+                                        onKeyDown={(e) => {
+                                          if (e.key === "Enter") {
+                                            updateTag(index, tagIndex, fileObj.newTagValue || tag.tagName)
+                                          } else if (e.key === "Escape") {
+                                            cancelEditingTag(index)
+                                          }
+                                        }}
+                                        className="h-5 text-xs border-none p-0 bg-transparent focus:ring-0 min-w-[60px]"
+                                        autoFocus
+                                      />
+                                    ) : (
+                                      <span
+                                        onClick={() => startEditingTag(index, tagIndex, tag.tagName)}
+                                        className="cursor-pointer"
+                                      >
+                                        {tag.tagName}
+                                      </span>
+                                    )}
+                                    <div className="flex items-center space-x-1 ml-1">
+                                      <button
+                                        onClick={() => startEditingTag(index, tagIndex, tag.tagName)}
+                                        className="opacity-0 group-hover:opacity-100 hover:text-blue-600 transition-opacity"
+                                      >
+                                        <Edit2 className="h-3 w-3" />
+                                      </button>
+                                      <button
+                                        onClick={() => removeTag(index, tag)}
+                                        className="hover:text-red-500 transition-colors"
+                                      >
+                                        <X className="h-3 w-3" />
+                                      </button>
+                                    </div>
+                                  </Badge>
+                                ))
+                              ) : (
+                                <p className="text-xs text-gray-500">No tags yet. Add some below.</p>
+                              )}
                             </div>
 
                             <div className="flex gap-2 mt-2">
@@ -400,22 +584,20 @@ const FileUploadPage = () => {
                                 placeholder="Add custom tag..."
                                 value={newTag}
                                 onChange={(e) => setNewTag(e.target.value)}
-                                className="flex-1 h-8 text-sm"
+                                className="flex-1 h-8 text-sm bg-white"
                                 onKeyDown={(e) => {
                                   if (e.key === "Enter") {
-                                    addTag(index)
+                                    addTag(index, newTag)
                                   }
                                 }}
                               />
                               <Button
                                 size="sm"
-                                onClick={() => addTag(index)}
+                                onClick={() => addTag(index, newTag)}
+                                disabled={!newTag.trim()}
                                 className="h-8 bg-[#4B6982] hover:bg-[#3a5269]"
                               >
                                 <Plus className="h-3 w-3" />
-                              </Button>
-                              <Button size="sm" variant="outline" onClick={() => saveTags(index)} className="h-8">
-                                Save Tags
                               </Button>
                             </div>
                           </div>
@@ -433,4 +615,4 @@ const FileUploadPage = () => {
   )
 }
 
-export default FileUploadPage
+export default UploadPage

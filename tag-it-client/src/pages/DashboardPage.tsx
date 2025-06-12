@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import { useEffect, useState } from "react"
 import { BarChart3, FolderSymlink, Tags, Search, Calendar, ArrowUpRight, FileText } from "lucide-react"
 import { Link } from "react-router-dom"
@@ -12,13 +14,26 @@ import { Progress } from "@/components/ui/progress"
 import { useAppSelector } from "@/redux/hooks"
 import axiosInstance from "@/utils/axiosInstance"
 import type { FileItem } from "@/types/FileItem"
-import { UserStats } from "@/types/UserStats"
-import { ActivityItem } from "@/types/ActivityItem"
+import { toast } from "sonner"
+import { useDispatch } from "react-redux"
+import { AppDispatch } from "@/redux/store"
+import { fetchRecentFiles } from "@/redux/slices/recentFilesSlice"
 
+interface UserStats {
+  totalFiles: number
+  totalSizeBytes: number
+  totalTags: number
+  totalFolders: number
+}
 
+interface ActivityItem {
+  action: string
+  metadata: string
+  createdAt: string
+}
 
 const DashboardPage = () => {
-  // const dispatch = useAppDispatch()
+  const dispatch = useDispatch<AppDispatch>()
   const user = useAppSelector((state) => state.user.user)
   const [stats, setStats] = useState<UserStats>({
     totalFiles: 0,
@@ -34,6 +49,7 @@ const DashboardPage = () => {
   useEffect(() => {
     if (user?.id) {
       fetchDashboardData()
+      dispatch(fetchRecentFiles({ userId: user.id, limit: 5 }))
     }
   }, [user])
 
@@ -44,55 +60,90 @@ const DashboardPage = () => {
       // Fetch user stats
       try {
         const statsResponse = await axiosInstance.get<UserStats>(`/api/User/${user?.id}/stats`)
+        console.log("Stats response:", statsResponse.data)
         setStats(statsResponse.data)
       } catch (error) {
         console.error("Error fetching user stats:", error)
-        // Keep default stats if API fails
       }
 
-      // Fetch recent files from user's root folder
-      if (user?.rootFolderId) {
-        try {
-          const filesResponse = await axiosInstance.get(`/api/Folder/${user.rootFolderId}/items`)
-          const files = filesResponse.data.files || []
-          setRecentFiles(files.slice(0, 5)) // Get 5 most recent files
+      // Fetch recent files
+      try {
+        const recentFilesResponse = await axiosInstance.get<FileItem[]>(`/api/File/${user?.id}/recent-files?limit=5`)
+        console.log("Recent files response:", recentFilesResponse.data)
+        setRecentFiles(recentFilesResponse.data || [])
 
-          // Generate popular tags from recent files
-          const tagCounts: { [key: string]: number } = {}
-          files.forEach((file: FileItem) => {
-            if (file.tags) {
-              file.tags.forEach((tag) => {
-                tagCounts[tag] = (tagCounts[tag] || 0) + 1
-              })
-            }
-          })
+        // Generate popular tags from recent files
+        const tagCounts: { [key: string]: number } = {}
+        recentFilesResponse.data?.forEach((file: FileItem) => {
+          if (file.tags) {
+            file.tags.forEach((tag) => {
+              tagCounts[tag.tagName] = (tagCounts[tag.tagName] || 0) + 1
+            })
+          }
+        })
 
-          const sortedTags = Object.entries(tagCounts)
-            .sort(([, a], [, b]) => b - a)
-            .slice(0, 7)
-            .map(([name, count]) => ({ name, count }))
+        const sortedTags = Object.entries(tagCounts)
+          .sort(([, a], [, b]) => b - a)
+          .slice(0, 7)
+          .map(([name, count]) => ({ name, count }))
 
-          setPopularTags(sortedTags)
-        } catch (error) {
-          console.error("Error fetching recent files:", error)
-        }
+        setPopularTags(sortedTags)
+      } catch (error) {
+        console.error("Error fetching recent files:", error)
       }
 
       // Fetch recent activity
       try {
         const activityResponse = await axiosInstance.get<ActivityItem[]>(`/api/User/${user?.id}/recent-activity`)
-        console.log("Recent activity response:", activityResponse.data);
-        
-        setActivities(activityResponse.data)
+        console.log("Recent activity response:", activityResponse.data)
+        setActivities(activityResponse.data || [])
       } catch (error) {
         console.error("Error fetching activity:", error)
-        // Fallback to empty activity if API fails
         setActivities([])
       }
     } catch (error) {
       console.error("Error fetching dashboard data:", error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleFilePreview = async (file: FileItem) => {
+    try {
+      const response = await axiosInstance.get(`/api/File/${file.id}/viewing-url`)
+      window.open(response.data.url, "_blank")
+    } catch (error) {
+      console.error("Error getting preview URL:", error)
+      toast.error("Failed to preview file")
+    }
+  }
+
+  const handleFileDownload = async (file: FileItem) => {
+    try {
+      const response = await axiosInstance.get(`/api/File/${file.id}/download-url`)
+      const link = document.createElement("a")
+      link.href = response.data.url
+      link.download = file.fileName
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      toast.success(`Downloading ${file.fileName}`)
+    } catch (error) {
+      console.error("Error downloading file:", error)
+      toast.error("Failed to download file")
+    }
+  }
+
+  const handleFileDelete = async (fileId: number) => {
+    try {
+      await axiosInstance.delete(`/api/File/${fileId}`)
+      setRecentFiles((prev) => prev.filter((file) => file.id !== fileId))
+      toast.success("File deleted successfully")
+      // Refresh stats after deletion
+      fetchDashboardData()
+    } catch (error) {
+      console.error("Error deleting file:", error)
+      toast.error("Failed to delete file")
     }
   }
 
@@ -132,7 +183,17 @@ const DashboardPage = () => {
     )
   }
 
-  const storagePercentage = Math.min((stats.totalSizeBytes / (10 * 1024 * 1024 * 1024)) * 100, 100) // Assuming 10GB limit
+  // Calculate storage percentage correctly
+  const storageUsedBytes = stats.totalSizeBytes || 0
+  const storageLimitBytes = 10 * 1024 * 1024 * 1024 // 10GB in bytes
+  const storagePercentage = storageUsedBytes > 0 ? Math.min((storageUsedBytes / storageLimitBytes) * 100, 100) : 0
+
+  console.log("Storage calculation:", {
+    storageUsedBytes,
+    storageLimitBytes,
+    storagePercentage,
+    formattedSize: formatFileSize(storageUsedBytes),
+  })
 
   return (
     <DashboardLayout>
@@ -198,12 +259,20 @@ const DashboardPage = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold" style={{ color: "#3a5269" }}>
-              {formatFileSize(stats.totalSizeBytes)}
+              {formatFileSize(storageUsedBytes)}
             </div>
             <div className="mt-2">
-              <Progress value={storagePercentage} className="h-2" />
+              <Progress
+                value={storagePercentage}
+                className="h-2 bg-gray-200"
+                style={
+                  {
+                    "--progress-background": "#A8EBC7",
+                  } as React.CSSProperties
+                }
+              />
               <p className="text-xs mt-1" style={{ color: "#4B6982" }}>
-                {Math.round(storagePercentage)}% of 10 GB
+                {storagePercentage.toFixed(1)}% of 10 GB
               </p>
             </div>
           </CardContent>
@@ -247,9 +316,9 @@ const DashboardPage = () => {
                     <FileCard
                       key={file.id}
                       file={file}
-                      onPreview={() => {}}
-                      onDownload={() => {}}
-                      onDelete={() => {}}
+                      onPreview={handleFilePreview}
+                      onDownload={handleFileDownload}
+                      onDelete={handleFileDelete}
                     />
                   ))
                 ) : (

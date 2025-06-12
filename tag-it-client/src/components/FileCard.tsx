@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { Download, Eye, MoreVertical, Trash2, Share2, Edit } from "lucide-react"
+import { Download, Eye, MoreVertical, Trash2, Edit, Tag } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import type { FileItem } from "@/types/FileItem"
@@ -12,6 +12,8 @@ interface FileCardProps {
   onPreview: (file: FileItem) => void
   onDownload: (file: FileItem) => void
   onDelete: (fileId: number) => void
+  onRename?: (fileId: number, newName: string) => void
+  onEditTags?: (file: FileItem) => void
   customIcon?: React.ReactNode
   className?: string
 }
@@ -27,7 +29,16 @@ export const formatFileSize = (bytes: number): string => {
   return Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i]
 }
 
-const FileCard = ({ file, onPreview, onDownload, onDelete, customIcon, className }: FileCardProps) => {
+const FileCard = ({
+  file,
+  onPreview,
+  onDownload,
+  onDelete,
+  onRename,
+  onEditTags,
+  customIcon,
+  className,
+}: FileCardProps) => {
   const { id, fileName, fileType, size, tags, lastModified } = file
   const [isDeleting, setIsDeleting] = useState(false)
 
@@ -62,10 +73,16 @@ const FileCard = ({ file, onPreview, onDownload, onDelete, customIcon, className
 
   const relativeTime = getRelativeTimeString(lastModified)
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (window.confirm(`Are you sure you want to delete ${fileName}?`)) {
       setIsDeleting(true)
-      onDelete(id)
+      try {
+        await onDelete(id)
+      } catch (error) {
+        console.error("Error deleting file:", error)
+      } finally {
+        setIsDeleting(false)
+      }
     }
   }
 
@@ -112,14 +129,29 @@ const FileCard = ({ file, onPreview, onDownload, onDelete, customIcon, className
                 <Download className="mr-2 h-4 w-4" />
                 Download
               </DropdownMenuItem>
-              <DropdownMenuItem className="flex items-center px-3 py-2 text-sm hover:bg-tagit-mint/20 hover:text-tagit-blue focus:bg-tagit-mint/20 focus:text-tagit-blue">
-                <Share2 className="mr-2 h-4 w-4" />
-                Share
-              </DropdownMenuItem>
-              <DropdownMenuItem className="flex items-center px-3 py-2 text-sm hover:bg-tagit-mint/20 hover:text-tagit-blue focus:bg-tagit-mint/20 focus:text-tagit-blue">
-                <Edit className="mr-2 h-4 w-4" />
-                Rename
-              </DropdownMenuItem>
+              {onEditTags && (
+                <DropdownMenuItem
+                  onClick={() => onEditTags(file)}
+                  className="flex items-center px-3 py-2 text-sm hover:bg-tagit-mint/20 hover:text-tagit-blue focus:bg-tagit-mint/20 focus:text-tagit-blue"
+                >
+                  <Tag className="mr-2 h-4 w-4" />
+                  Edit Tags
+                </DropdownMenuItem>
+              )}
+              {onRename && (
+                <DropdownMenuItem
+                  onClick={() => {
+                    const newName = prompt("Enter new file name:", fileName)
+                    if (newName && newName !== fileName) {
+                      onRename(id, newName)
+                    }
+                  }}
+                  className="flex items-center px-3 py-2 text-sm hover:bg-tagit-mint/20 hover:text-tagit-blue focus:bg-tagit-mint/20 focus:text-tagit-blue"
+                >
+                  <Edit className="mr-2 h-4 w-4" />
+                  Rename
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem
                 onClick={handleDelete}
                 disabled={isDeleting}
@@ -139,7 +171,7 @@ const FileCard = ({ file, onPreview, onDownload, onDelete, customIcon, className
                 key={index}
                 className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800"
               >
-                {tag}
+                {typeof tag === "string" ? tag : tag.tagName}
               </span>
             ))}
             {tags.length > 3 && (

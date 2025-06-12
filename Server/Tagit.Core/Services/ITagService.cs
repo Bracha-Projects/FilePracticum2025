@@ -12,8 +12,12 @@ namespace Tagit.Core.Services
     {
         Task<List<TagDTO>> GetAllTagsAsync();
         Task<TagDTO> GetTagByIdAsync(int id);
-        Task<TagDTO> CreateTagAsync(TagDTO tag);
+        Task<TagDTO> CreateTagAsync(string tagName, int fileId);
         Task<TagDTO> UpdateTagAsync(TagDTO tag);
         Task<bool> DeleteTagAsync(int id);
+        Task<List<TagDTO>> GetTagsByUserIdAsync(int userId);
+        Task<IEnumerable<TagDTO>> GetPopularTagsAsync();
+
+
     }
 }

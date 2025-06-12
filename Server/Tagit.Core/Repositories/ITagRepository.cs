@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Tagit.Core.DTOs;
 using Tagit.Core.Entities;
 
 namespace Tagit.Core.Repositories
@@ -14,5 +15,8 @@ namespace Tagit.Core.Repositories
         Task<Tag> CreateTagAsync(Tag tag);
         Task<Tag> UpdateTagAsync(Tag tag);
         Task<bool> DeleteTagAsync(int id);
+        Task<List<Tag>> GetTagsByUserIdAsync(int userId);
+        Task<IEnumerable<Tag>> GetPopularTagsAsync();
+
     }
 }

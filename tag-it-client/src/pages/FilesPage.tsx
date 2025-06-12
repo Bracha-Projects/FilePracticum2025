@@ -50,6 +50,7 @@ import DashboardLayout from "@/layouts/DashboardLayout"
 import { useAppDispatch, useAppSelector } from "@/redux/hooks"
 import { toast } from "sonner"
 import type { FileItem } from "@/types/FileItem"
+import type { Tag as TagDTO } from "@/types/Tag"
 import axiosInstance from "@/utils/axiosInstance"
 import {
   createFolder,
@@ -70,9 +71,8 @@ import { useNavigate } from "react-router-dom"
 type SortOption = "name-asc" | "name-desc" | "date-asc" | "date-desc" | "type-asc" | "type-desc"
 
 interface FileSearchModel {
-  ownerId: number,
-  folderId?: number
-  tags?: string[]
+  ownerId: number
+  tagIds?: number[]
   fromDate?: string
   toDate?: string
   fileNameContains?: string
@@ -93,10 +93,12 @@ const FilesPage = () => {
   const [searchQuery, setSearchQuery] = useState("")
   const [sortOption, setSortOption] = useState<SortOption>("date-desc")
   const [activeTab, setActiveTab] = useState("all")
-  const [selectedTags, setSelectedTags] = useState<string[]>([])
+  const [selectedTags, setSelectedTags] = useState<TagDTO[]>([])
   const [previewFile, setPreviewFile] = useState<FileItem | null>(null)
   const [searchResults, setSearchResults] = useState<FileItem[]>([])
   const [isSearching, setIsSearching] = useState(false)
+  const [allAvailableTags, setAllAvailableTags] = useState<TagDTO[]>([])
+  const [isLoadingTags, setIsLoadingTags] = useState(false)
 
   // Date range filters
   const [fromDate, setFromDate] = useState("")
@@ -115,6 +117,28 @@ const FilesPage = () => {
       dispatch(fetchFolderContents(user.rootFolderId))
     }
   }, [dispatch, user, folderPath.length])
+
+  // Fetch all available tags
+  useEffect(() => {
+    if (user?.id) {
+      fetchAllTags()
+    }
+  }, [user?.id])
+
+  const fetchAllTags = async () => {
+    if (!user?.id) return
+
+    try {
+      setIsLoadingTags(true)
+      const response = await axiosInstance.get<TagDTO[]>(`/api/Tag/user/${user.id}`)
+      setAllAvailableTags(response.data)
+    } catch (error) {
+      console.error("Error fetching tags:", error)
+      toast.error("Failed to load tags")
+    } finally {
+      setIsLoadingTags(false)
+    }
+  }
 
   // Perform recursive search when search criteria change
   useEffect(() => {
@@ -138,7 +162,7 @@ const FilesPage = () => {
         searchParams.fileNameContains = searchQuery
       }
       if (selectedTags.length > 0) {
-        searchParams.tags = selectedTags // API might need modification for multiple tags
+        searchParams.tagIds = selectedTags.map((tag) => tag.id)
       }
       if (fromDate) {
         searchParams.fromDate = fromDate
@@ -146,10 +170,8 @@ const FilesPage = () => {
       if (toDate) {
         searchParams.toDate = toDate
       }
-      if(currentFolderId)
-        searchParams.folderId = currentFolderId // Search within current folder context
 
-      const response = await axiosInstance.get<FileItem[]>("/api/Search/Files", {
+      const response = await axiosInstance.get<FileItem[]>("/api/files/search", {
         params: searchParams,
       })
 
@@ -209,17 +231,17 @@ const FilesPage = () => {
     navigate(`/upload?folderId=${currentFolderId}`)
   }
 
-  // Extract all unique tags from files
-  const allTags = useMemo(() => {
-    const tags = new Set<string>()
-    const filesToProcess = searchResults.length > 0 ? searchResults : files
-    filesToProcess.forEach((file: FileItem) => {
-      if (file.tags) {
-        file.tags.forEach((tag) => tags.add(tag))
-      }
-    })
-    return Array.from(tags).sort()
-  }, [files, searchResults])
+  //Extract all unique tags from files
+  // const fileTags = useMemo(() => {
+  //   const tags = new Set<string>()
+  //   const filesToProcess = searchResults.length > 0 ? searchResults : files
+  //   filesToProcess.forEach((file) => {
+  //     if (file.tags) {
+  //       file.tags.forEach((tag) => tags.add(tag))
+  //     }
+  //   })
+  //   return Array.from(tags).sort()
+  // }, [files, searchResults])
 
   // Use search results if available, otherwise use current folder files
   const displayFiles =
@@ -265,8 +287,10 @@ const FilesPage = () => {
   }, [displayFiles, activeTab, sortOption])
 
   // Toggle tag selection
-  const toggleTag = (tag: string) => {
-    setSelectedTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]))
+  const toggleTag = (tag: TagDTO) => {
+    setSelectedTags((prev) =>
+      prev.some((t) => t.id === tag.id) ? prev.filter((t) => t.id !== tag.id) : [...prev, tag],
+    )
   }
 
   // Helper function to get the appropriate icon for file types
@@ -549,7 +573,7 @@ const FilesPage = () => {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
-                placeholder="Search files by name (searches all folders)..."
+                placeholder="Search files by name or content..."
                 className="pl-9"
                 style={{
                   borderColor: "#e2e8f0",
@@ -614,7 +638,7 @@ const FilesPage = () => {
                     <SlidersHorizontal className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-[250px]">
+                <DropdownMenuContent align="end" className="w-[300px]">
                   <DropdownMenuLabel>Filters</DropdownMenuLabel>
                   <DropdownMenuSeparator />
 
@@ -635,15 +659,21 @@ const FilesPage = () => {
                   <DropdownMenuSeparator />
 
                   <DropdownMenuLabel>Filter by tags</DropdownMenuLabel>
-                  {allTags.length > 0 ? (
-                    allTags.map((tag) => (
-                      <DropdownMenuItem key={tag} onClick={() => toggleTag(tag)} className="flex items-center">
-                        <div className="w-4 h-4 mr-2 flex items-center justify-center">
-                          {selectedTags.includes(tag) && "✓"}
-                        </div>
-                        {tag}
-                      </DropdownMenuItem>
-                    ))
+                  {isLoadingTags ? (
+                    <div className="p-2 text-center">
+                      <Loader2 className="h-4 w-4 animate-spin mx-auto" />
+                    </div>
+                  ) : allAvailableTags.length > 0 ? (
+                    <div className="max-h-48 overflow-y-auto">
+                      {allAvailableTags.map((tag) => (
+                        <DropdownMenuItem key={tag.id} onClick={() => toggleTag(tag)} className="flex items-center">
+                          <div className="w-4 h-4 mr-2 flex items-center justify-center">
+                            {selectedTags.some((t) => t.id === tag.id) && "✓"}
+                          </div>
+                          {tag.tagName}
+                        </DropdownMenuItem>
+                      ))}
+                    </div>
                   ) : (
                     <DropdownMenuItem disabled>No tags available</DropdownMenuItem>
                   )}
@@ -672,10 +702,10 @@ const FilesPage = () => {
               )}
               {selectedTags.map((tag) => (
                 <span
-                  key={tag}
+                  key={tag.id}
                   className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
                 >
-                  Tag: {tag}
+                  Tag: {tag.tagName}
                   <button className="ml-1 text-blue-800 hover:text-blue-900" onClick={() => toggleTag(tag)}>
                     ×
                   </button>

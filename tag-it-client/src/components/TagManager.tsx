@@ -11,12 +11,13 @@ import { toast } from "sonner"
 import type { Tag as TagDTO } from "@/types/Tag"
 
 interface TagManagerProps {
-  fileId: number
+  fileId?: number // Optional - if provided, will associate tags with this file
   initialTags: TagDTO[]
   onTagsUpdate: (tags: TagDTO[]) => void
+  isGlobal?: boolean // If true, manages global tags instead of file-specific tags
 }
 
-const TagManager: React.FC<TagManagerProps> = ({ fileId, initialTags, onTagsUpdate }) => {
+const TagManager: React.FC<TagManagerProps> = ({ fileId, initialTags, onTagsUpdate, isGlobal = false }) => {
   const [tags, setTags] = useState<TagDTO[]>(initialTags)
   const [newTag, setNewTag] = useState("")
   const [editingTag, setEditingTag] = useState<number | null>(null)
@@ -36,9 +37,21 @@ const TagManager: React.FC<TagManagerProps> = ({ fileId, initialTags, onTagsUpda
     setIsLoading(true)
 
     try {
-      const response = await axiosInstance.post<TagDTO>(`/api/Files/${fileId}/tags`, {
-        tagName: tagToAdd,
-      })
+      let response
+
+      if (isGlobal) {
+        // Add global tag
+        response = await axiosInstance.post<TagDTO>(`/api/Tag`, {
+          tagName: tagToAdd,
+        })
+      } else if (fileId) {
+        // Associate tag with file
+        response = await axiosInstance.post<TagDTO>(`/api/files/${fileId}/tags`, {
+          tagName: tagToAdd,
+        })
+      } else {
+        throw new Error("Either fileId or isGlobal must be provided")
+      }
 
       const updatedTags = [...tags, response.data]
       setTags(updatedTags)
@@ -57,7 +70,15 @@ const TagManager: React.FC<TagManagerProps> = ({ fileId, initialTags, onTagsUpda
     setIsLoading(true)
 
     try {
-      await axiosInstance.delete(`/api/Files/${fileId}/tags/${tagToRemove.id}`)
+      if (isGlobal) {
+        // Remove global tag
+        await axiosInstance.delete(`/api/tags/${tagToRemove.id}`)
+      } else if (fileId) {
+        // Disassociate tag from file
+        await axiosInstance.delete(`/api/files/${fileId}/tags/${tagToRemove.id}`)
+      } else {
+        throw new Error("Either fileId or isGlobal must be provided")
+      }
 
       const updatedTags = tags.filter((tag) => tag.id !== tagToRemove.id)
       setTags(updatedTags)
@@ -80,9 +101,21 @@ const TagManager: React.FC<TagManagerProps> = ({ fileId, initialTags, onTagsUpda
     setIsLoading(true)
 
     try {
-      const response = await axiosInstance.put<TagDTO>(`/api/Files/${fileId}/tags/${tagToUpdate.id}`, {
-        tagName: newTagValue.trim(),
-      })
+      let response
+
+      if (isGlobal) {
+        // Update global tag
+        response = await axiosInstance.put<TagDTO>(`/api/tags/${tagToUpdate.id}`, {
+          tagName: newTagValue.trim(),
+        })
+      } else if (fileId) {
+        // Update tag for file
+        response = await axiosInstance.put<TagDTO>(`/api/files/${fileId}/tags/${tagToUpdate.id}`, {
+          tagName: newTagValue.trim(),
+        })
+      } else {
+        throw new Error("Either fileId or isGlobal must be provided")
+      }
 
       const updatedTags = tags.map((tag) => (tag.id === tagToUpdate.id ? response.data : tag))
       setTags(updatedTags)
