@@ -39,7 +39,6 @@ const themeSlice = createSlice({
 
 export const { setTheme, setFontSize, initializeTheme } = themeSlice.actions
 
-// Selectors
 export const selectTheme = (state: RootState) => state.theme.theme
 export const selectFontSize = (state: RootState) => state.theme.fontSize
 

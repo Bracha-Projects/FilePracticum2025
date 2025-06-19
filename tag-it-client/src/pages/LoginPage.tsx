@@ -36,18 +36,15 @@ const LoginPage = () => {
       return
     }
 
-    // Simulate login
     setIsLoading(true)
     try {
       const loginData: LoginRequest = { email, password };
       const response = await axios.post<AuthResponse>("/api/User/login", loginData);
 
       const data = response.data;
-      // Save token and user details in Redux
       dispatch(setUser({ user: data.user, token: data.token }));
       console.log("Login successful:", data);
 
-      // Save token in localStorage (for API authentication)
       localStorage.setItem("token", data.token);
 
       toast.success("Success", {

@@ -11,6 +11,6 @@ export interface User {
   profileImageUrl?: string
   lastLoginAt: Date
   rootFolderId: number
-  provider?: string // "Google", "GitHub", או null
-  providerId?: string // ה-ID שמתקבל מה-OAuth
+  provider?: string 
+  providerId?: string 
 }

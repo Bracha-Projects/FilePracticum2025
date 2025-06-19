@@ -71,7 +71,6 @@ const activitySlice = createSlice({
 
 export const { clearActivity, addActivity } = activitySlice.actions
 
-// Selectors
 export const selectUserActivity = (state: RootState) => state.activity.activities
 export const selectActivityLoading = (state: RootState) => state.activity.loading
 export const selectActivityError = (state: RootState) => state.activity.error

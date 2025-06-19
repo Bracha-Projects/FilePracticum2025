@@ -10,7 +10,6 @@ import { Textarea } from "@/components/ui/textarea"
 const ContactPage: React.FC = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    // Handle form submission here
     alert("Thank you for your message! We'll get back to you soon.");
     (e.currentTarget as HTMLFormElement).reset()
   }

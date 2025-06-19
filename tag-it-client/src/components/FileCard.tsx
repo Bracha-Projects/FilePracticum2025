@@ -18,7 +18,6 @@ interface FileCardProps {
   className?: string
 }
 
-// Helper function to format file size
 export const formatFileSize = (bytes: number): string => {
   if (bytes === 0) return "0 Bytes"
 
@@ -42,14 +41,12 @@ const FileCard = ({
   const { id, fileName, fileType, size, tags, lastModified } = file
   const [isDeleting, setIsDeleting] = useState(false)
 
-  // Format the date to a more readable format
   const formattedDate = new Date(lastModified).toLocaleDateString("en-US", {
     year: "numeric",
     month: "short",
     day: "numeric",
   })
 
-  // Format the relative time (e.g., "2 days ago")
   const getRelativeTimeString = (date: string): string => {
     const now = new Date()
     const past = new Date(date)

@@ -13,7 +13,6 @@ import { Progress } from "@/components/ui/progress"
 import { toast } from "sonner"
 import DashboardLayout from "@/layouts/DashboardLayout"
 
-// Example data for downloadable files
 const downloadableFiles = [
   {
     id: "1",
@@ -67,7 +66,6 @@ const downloadableFiles = [
   },
 ]
 
-// Example data for recent downloads
 const recentDownloads = [
   {
     id: "6",
@@ -97,7 +95,6 @@ const FileDownloadPage = () => {
   const [files, setFiles] = useState(downloadableFiles)
   const [activeFilter, setActiveFilter] = useState("all")
 
-  // Filter files based on search query and active filter
   const filteredFiles = files.filter((file) => {
     const matchesSearch =
       file.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -112,11 +109,9 @@ const FileDownloadPage = () => {
   })
 
   const handleDownload = (fileId: string) => {
-    // Find the file to download
     const fileToDownload = files.find((file) => file.id === fileId)
     if (!fileToDownload) return
 
-    // Update file status to downloading
     setFiles((prevFiles) =>
       prevFiles.map((file) =>
         file.id === fileId
@@ -129,7 +124,6 @@ const FileDownloadPage = () => {
       ),
     )
 
-    // Simulate download progress
     let progress = 0
     const interval = setInterval(() => {
       progress += Math.random() * 15
@@ -137,7 +131,6 @@ const FileDownloadPage = () => {
         progress = 100
         clearInterval(interval)
 
-        // Update file status to complete
         setFiles((prevFiles) =>
           prevFiles.map((file) =>
             file.id === fileId
@@ -154,7 +147,6 @@ const FileDownloadPage = () => {
           description: `${fileToDownload.name} has been downloaded successfully.`,
         })
 
-        // Reset status after a delay
         setTimeout(() => {
           setFiles((prevFiles) =>
             prevFiles.map((file) =>
@@ -169,7 +161,6 @@ const FileDownloadPage = () => {
           )
         }, 3000)
       } else {
-        // Update download progress
         setFiles((prevFiles) =>
           prevFiles.map((file) =>
             file.id === fileId

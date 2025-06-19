@@ -55,7 +55,6 @@ const FolderCard: React.FC<FolderCardProps> = ({
 
       toast.success("Folder renamed successfully")
       setIsEditing(false)
-      // Refresh folder contents
       if (parentFolderId) {
         dispatch(fetchFolderContents(parentFolderId))
       }
@@ -77,7 +76,6 @@ const FolderCard: React.FC<FolderCardProps> = ({
       await axiosInstance.delete(`/api/Folder/${id}`)
 
       toast.success("Folder deleted successfully")
-      // Refresh folder contents
       if (parentFolderId) {
         dispatch(fetchFolderContents(parentFolderId))
       }
@@ -98,12 +96,10 @@ const FolderCard: React.FC<FolderCardProps> = ({
     }
   }
 
-  // Don't render deleted folders
   if (isDeleted) {
     return null
   }
 
-  // Format date properly
   const formatDate = (dateInput: string | Date) => {
     try {
       const date = typeof dateInput === "string" ? new Date(dateInput) : dateInput;

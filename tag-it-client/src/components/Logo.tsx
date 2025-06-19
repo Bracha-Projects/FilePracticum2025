@@ -5,7 +5,7 @@ interface LogoProps {
   size?: "sm" | "md" | "lg"
   withText?: boolean
   className?: string
-  textColor?: string // Added prop for text color
+  textColor?: string 
 }
 
 const Logo: React.FC<LogoProps> = ({ size = "md", withText = true, className = "", textColor }) => {
@@ -21,7 +21,6 @@ const Logo: React.FC<LogoProps> = ({ size = "md", withText = true, className = "
     lg: "text-4xl",
   }
 
-  // Default text color is blue, but can be overridden with textColor prop
   const textColorClass = textColor || "text-[#4B6982]"
 
   return (

@@ -82,7 +82,6 @@ const UploadPage = () => {
 
     setUploadedFiles((prev) => [...prev, ...filesWithProgress])
 
-    // Upload each file
     for (let i = 0; i < filesWithProgress.length; i++) {
       const fileIndex = uploadedFiles.length + i
       await uploadFile(filesWithProgress[i], fileIndex, folderId)
@@ -91,14 +90,12 @@ const UploadPage = () => {
 
   const uploadFile = async (fileObj: UploadFile, fileIndex: number, folderId: number) => {
     try {
-      // Step 1: Get presigned URL
       const presignedResponse = await axiosInstance.get<{ url: string }>(
         `/api/File/presigned-url?fileName=${encodeURIComponent(fileObj.file.name)}&folderId=${folderId}`,
       )
 
       const presignedUrl = presignedResponse.data.url
 
-      // Step 2: Upload file to S3 with progress tracking
       const xhr = new XMLHttpRequest()
 
       xhr.upload.addEventListener("progress", (e) => {
@@ -119,13 +116,10 @@ const UploadPage = () => {
 
       xhr.addEventListener("load", async () => {
         if (xhr.status === 200) {
-          // Step 3: Extract S3 key from presigned URL
           const url = new URL(presignedUrl)
-          const s3Key = url.pathname.substring(1) // Remove leading slash
+          const s3Key = url.pathname.substring(1) 
 
-          // Step 4: Add file metadata to database
           try {
-            // Step 5: Get AI-generated tags
             const aiTagNames = await generateAITags(fileObj.file)
 
             const fileMetadata = {
@@ -141,7 +135,6 @@ const UploadPage = () => {
             const addFileResponse = await axiosInstance.post("/api/File/add-file", fileMetadata)
             const createdFile = addFileResponse.data
 
-            // Fetch the actual tags with IDs from the server
             const tagsResponse = await axiosInstance.get<TagType[]>(`/api/Tag/${createdFile.id}/tags`)
 
             setUploadedFiles((prev) => {
@@ -160,7 +153,6 @@ const UploadPage = () => {
 
             toast.success(`${fileObj.file.name} uploaded successfully`)
 
-            // Refresh folder contents
             dispatch(fetchFolderContents(folderId))
           } catch (error) {
             console.error("Error adding file metadata:", error)
@@ -214,7 +206,6 @@ const UploadPage = () => {
     }
   }
 
-  // AI tag generation
   const generateAITags = async (file: File): Promise<string[]> => {
     const formData = new FormData()
     formData.append("file", file)
@@ -226,7 +217,6 @@ const UploadPage = () => {
         },
       })
 
-      // Assuming the API returns: { tags: ["tag1", "tag2"] }
       return response.data.tags || []
     } catch (error: any) {
       console.error("Failed to generate AI tags:", error)
@@ -344,7 +334,6 @@ const UploadPage = () => {
       console.error("Error updating tag:", error)
       toast.error("Failed to update tag")
 
-      // Reset editing state
       setUploadedFiles((prev) => {
         const updated = [...prev]
         if (updated[fileIndex]) {
@@ -380,7 +369,6 @@ const UploadPage = () => {
     setIsRefreshingTags(fileIndex)
 
     try {
-      // Call AI service to regenerate tags
       const response = await axiosInstance.post<TagType[]>(`/api/File/${fileObj.id}/regenerate-tags`)
 
       setUploadedFiles((prev) => {

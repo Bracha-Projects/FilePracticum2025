@@ -10,7 +10,6 @@ const LandingPage = () => {
   const featuresRef = React.useRef<HTMLDivElement>(null)
 
   React.useEffect(() => {
-    // Immediately make feature cards visible instead of waiting for intersection
     const elements = document.querySelectorAll(".feature-card")
     elements.forEach((el) => {
       el.classList.add("animate-fade-in")

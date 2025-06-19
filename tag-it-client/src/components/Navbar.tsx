@@ -13,7 +13,6 @@ const Navbar = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
 
   useEffect(() => {
-    // This is just for demo purposes - in a real app, you'd check auth state
     const checkPath = location.pathname
     setIsLoggedIn(
       checkPath.includes("/dashboard") ||

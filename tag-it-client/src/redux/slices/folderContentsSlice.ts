@@ -27,7 +27,6 @@ const initialState: FolderContentsState = {
   error: null,
 }
 
-// Async thunks
 export const fetchFolderContents = createAsyncThunk<{ subFolders: FolderItem[]; files: FileItem[] }, number>(
   "folderContents/fetchFolderContents",
   async (folderId: number, { rejectWithValue }) => {
@@ -94,7 +93,6 @@ const folderContentsSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-    // Fetch folder contents
     builder.addCase(fetchFolderContents.pending, (state) => {
       state.loading = true
       state.error = null
@@ -110,12 +108,10 @@ const folderContentsSlice = createSlice({
       state.error = action.payload as string
     })
 
-    // Create folder
     builder.addCase(createFolder.fulfilled, (state, action) => {
       state.subFolders.push(action.payload)
     })
 
-    // Delete file
     builder.addCase(deleteFile.fulfilled, (state, action) => {
       state.files = state.files.filter((file) => file.id !== action.payload)
     })
@@ -125,7 +121,6 @@ const folderContentsSlice = createSlice({
 export const { setCurrentFolder, addToFolderPath, goToParentFolder, resetFolderPath, navigateToFolder } =
   folderContentsSlice.actions
 
-// Selectors
 export const selectCurrentFolderId = (state: RootState) => state.folderContents.currentFolderId
 export const selectSubFolders = (state: RootState) => state.folderContents.subFolders
 export const selectFiles = (state: RootState) => state.folderContents.files

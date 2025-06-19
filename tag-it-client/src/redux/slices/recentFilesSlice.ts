@@ -40,7 +40,6 @@ const recentFilesSlice = createSlice({
       state.lastUpdated = null
     },
     addRecentFile: (state, action: PayloadAction<FileItem>) => {
-      // Add file to the beginning and remove duplicates
       state.files = [action.payload, ...state.files.filter((f) => f.id !== action.payload.id)].slice(0, 10)
       state.lastUpdated = Date.now()
     },
@@ -67,7 +66,6 @@ const recentFilesSlice = createSlice({
 
 export const { clearRecentFiles, addRecentFile, removeRecentFile } = recentFilesSlice.actions
 
-// Selectors
 export const selectRecentFiles = (state: RootState) => state.recentFiles.files
 export const selectRecentFilesLoading = (state: RootState) => state.recentFiles.loading
 export const selectRecentFilesError = (state: RootState) => state.recentFiles.error

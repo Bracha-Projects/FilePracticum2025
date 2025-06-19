@@ -9,7 +9,7 @@ import {
   PURGE,
   REGISTER,
 } from "redux-persist"
-import storage from "redux-persist/lib/storage" // localStorage
+import storage from "redux-persist/lib/storage" 
 import userReducer from "./slices/userSlice"
 import folderContentsReducer from "./slices/folderContentsSlice"
 import themeReducer from "./slices/themeSlice"
@@ -17,14 +17,12 @@ import userStatsReducer from "./slices/userStatsSlice"
 import recentFilesReducer from "./slices/recentFilesSlice"
 import activityReducer from "./slices/activitySlice"
 
-// הגדרות לשמירת כל ה-slices ב-localStorage
 const persistConfig = {
   key: "root",
   storage,
-  whitelist: ["user", "folderContents", "theme"], // רק הסלייסים שרוצים לשמור
+  whitelist: ["user", "folderContents", "theme"], 
 }
 
-// שילוב ה-reducers עם persistReducer
 const rootReducer = {
   user: persistReducer(persistConfig, userReducer),
   folderContents: persistReducer(persistConfig, folderContentsReducer),
@@ -39,13 +37,12 @@ export const store = configureStore({
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: {
-        // התעלמות מפעולות של redux-persist כדי למנוע אזהרות
         ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
       },
     }),
 })
 
-export const persistor = persistStore(store) // יצירת persistor לשימוש ברכיב React
+export const persistor = persistStore(store) 
 
 export type RootState = ReturnType<typeof store.getState>
 export type AppDispatch = typeof store.dispatch

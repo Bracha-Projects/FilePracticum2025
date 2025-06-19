@@ -21,7 +21,6 @@ const FilePreviewModal = ({ isOpen, onClose, file, files, onDownload }: FilePrev
 
   if (!file) return null
 
-  // Find the index of the current file in the files array
   const fileIndex = files.findIndex((f) => f.id === file.id)
 
   const handlePrevious = () => {
@@ -74,8 +73,8 @@ const FilePreviewModal = ({ isOpen, onClose, file, files, onDownload }: FilePrev
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0 bg-white border-0">
-          <div className="p-4 border-b bg-gray-50 flex justify-between items-center">
+        <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0 bg-white border-0 shadow-xl">
+          <div className="p-4 border-b bg-gray-100 flex justify-between items-center">
             <h2 className="text-lg font-medium truncate max-w-[70%]">{currentFile.fileName}</h2>
             <div className="flex items-center space-x-2">
               <Button variant="outline" size="sm" onClick={() => setIsTagModalOpen(true)}>
@@ -115,12 +114,12 @@ const FilePreviewModal = ({ isOpen, onClose, file, files, onDownload }: FilePrev
           </div>
 
           {currentFile.tags && currentFile.tags.length > 0 && (
-            <div className="p-4 border-t bg-gray-50">
+            <div className="p-4 border-t bg-gray-100">
               <div className="flex flex-wrap gap-1">
                 {currentFile.tags.map((tag, index) => (
                   <span
                     key={index}
-                    className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-white border border-gray-200 text-gray-800"
+                    className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-white border border-gray-300 shadow-sm text-gray-800"
                   >
                     {typeof tag === "string" ? tag : tag.tagName}
                   </span>

@@ -39,7 +39,6 @@ const ProfilePage = () => {
         email: user.email || "",
       })
 
-      // Fetch user stats
       fetchUserStats()
     }
   }, [user])
@@ -164,7 +163,6 @@ const ProfilePage = () => {
     backgroundColor: "white",
   }
 
-  // Calculate storage usage percentage
   const storageUsedGB = userStats ? userStats.totalSizeBytes / (1024 * 1024 * 1024) : 0
   const storageLimit = 10 // GB
   const storagePercentage = Math.min((storageUsedGB / storageLimit) * 100, 100)

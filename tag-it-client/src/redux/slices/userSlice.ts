@@ -19,7 +19,6 @@ const initialState: UserState = {
   error: null,
 }
 
-// Login async thunk
 export const loginUser = createAsyncThunk<{ user: User; token: string }, { email: string; password: string }>(
   "user/login",
   async (credentials, { rejectWithValue }) => {
@@ -35,7 +34,6 @@ export const loginUser = createAsyncThunk<{ user: User; token: string }, { email
   },
 )
 
-// Register async thunk
 export const registerUser = createAsyncThunk<
   { user: User; token: string },
   { email: string; password: string; firstName: string; lastName: string }
@@ -75,7 +73,6 @@ const userSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-    // Login
     builder.addCase(loginUser.pending, (state) => {
       state.loading = true
       state.error = null
@@ -93,7 +90,6 @@ const userSlice = createSlice({
       state.error = action.payload as string
     })
 
-    // Register
     builder.addCase(registerUser.pending, (state) => {
       state.loading = true
       state.error = null
@@ -115,7 +111,6 @@ const userSlice = createSlice({
 
 export const { logout, clearError, setUser } = userSlice.actions
 
-// Selectors
 export const selectUser = (state: RootState) => state.user.user
 export const selectToken = (state: RootState) => state.user.token
 export const selectUserLoading = (state: RootState) => state.user.loading

@@ -23,6 +23,7 @@ import FolderCard from "@/components/FolderCard"
 import FileCard from "@/components/FileCard"
 import FileBreadcrumb from "@/components/FileBreadcrumb"
 import FilePreviewModal from "@/components/FilePreviewModal"
+import FileTagModal from "@/components/FileTagModal"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -99,17 +100,16 @@ const FilesPage = () => {
   const [isSearching, setIsSearching] = useState(false)
   const [allAvailableTags, setAllAvailableTags] = useState<TagDTO[]>([])
   const [isLoadingTags, setIsLoadingTags] = useState(false)
+  const [currentFile, setCurrentFile] = useState<FileItem | null>(null)
+  const [isTagModalOpen, setIsTagModalOpen] = useState(false)
 
-  // Date range filters
   const [fromDate, setFromDate] = useState("")
   const [toDate, setToDate] = useState("")
 
-  // Folder creation state
   const [isCreateFolderOpen, setIsCreateFolderOpen] = useState(false)
   const [newFolderName, setNewFolderName] = useState("")
   const [isCreatingFolder, setIsCreatingFolder] = useState(false)
 
-  // Initialize with root folder
   useEffect(() => {
     if (user?.id && user?.rootFolderId && folderPath.length === 0) {
       dispatch(setCurrentFolder(user.rootFolderId))
@@ -118,7 +118,6 @@ const FilesPage = () => {
     }
   }, [dispatch, user, folderPath.length])
 
-  // Fetch all available tags
   useEffect(() => {
     if (user?.id) {
       fetchAllTags()
@@ -140,7 +139,6 @@ const FilesPage = () => {
     }
   }
 
-  // Perform recursive search when search criteria change
   useEffect(() => {
     if (user?.id && (searchQuery || selectedTags.length > 0 || fromDate || toDate)) {
       performRecursiveSearch()
@@ -184,7 +182,6 @@ const FilesPage = () => {
     }
   }
 
-  // Create new folder
   const handleCreateFolder = async () => {
     if (!newFolderName.trim()) {
       toast.error("Please enter a folder name")
@@ -217,7 +214,6 @@ const FilesPage = () => {
     }
   }
 
-  // Navigate to parent folder
   const handleNavigateUp = () => {
     if (folderPath.length > 1) {
       dispatch(goToParentFolder())
@@ -226,32 +222,16 @@ const FilesPage = () => {
     }
   }
 
-  // Navigate to upload page with current folder context
   const handleUploadFiles = () => {
     navigate(`/upload?folderId=${currentFolderId}`)
   }
 
-  //Extract all unique tags from files
-  // const fileTags = useMemo(() => {
-  //   const tags = new Set<string>()
-  //   const filesToProcess = searchResults.length > 0 ? searchResults : files
-  //   filesToProcess.forEach((file) => {
-  //     if (file.tags) {
-  //       file.tags.forEach((tag) => tags.add(tag))
-  //     }
-  //   })
-  //   return Array.from(tags).sort()
-  // }, [files, searchResults])
-
-  // Use search results if available, otherwise use current folder files
   const displayFiles =
     searchResults.length > 0 || searchQuery || selectedTags.length > 0 || fromDate || toDate ? searchResults : files
 
-  // Filter and sort files based on client-side preferences
   const filteredAndSortedFiles = useMemo(() => {
     let filtered = [...displayFiles]
 
-    // Filter by file type based on active tab
     if (activeTab !== "all") {
       filtered = filtered.filter((file) => {
         if (activeTab === "documents") {
@@ -265,7 +245,6 @@ const FilesPage = () => {
       })
     }
 
-    // Sort files
     return filtered.sort((a, b) => {
       switch (sortOption) {
         case "name-asc":
@@ -286,14 +265,12 @@ const FilesPage = () => {
     })
   }, [displayFiles, activeTab, sortOption])
 
-  // Toggle tag selection
   const toggleTag = (tag: TagDTO) => {
     setSelectedTags((prev) =>
       prev.some((t) => t.id === tag.id) ? prev.filter((t) => t.id !== tag.id) : [...prev, tag],
     )
   }
 
-  // Helper function to get the appropriate icon for file types
   const getFileIcon = (type: string) => {
     const lowerType = type.toLowerCase()
     if (lowerType === "pdf") {
@@ -309,20 +286,15 @@ const FilesPage = () => {
     }
   }
 
-  // Handle file preview
   const handlePreview = async (file: FileItem) => {
     try {
-      const response = await axiosInstance.get<{ url: string }>(`/api/File/${file.id}/viewing-url`)
-      const viewingUrl = response.data.url
       setPreviewFile(file)
-      window.open(viewingUrl, "_blank")
     } catch (error) {
-      console.error("Error fetching viewing URL:", error)
-      toast.error("Failed to get file preview URL")
+      console.error("Error setting preview file:", error)
+      toast.error("Failed to preview file")
     }
   }
 
-  // Handle file download
   const handleDownload = async (file: FileItem) => {
     try {
       const response = await axiosInstance.get<{ url: string }>(`/api/File/${file.id}/download-url`)
@@ -342,12 +314,10 @@ const FilesPage = () => {
     }
   }
 
-  // Handle file deletion
   const handleDelete = async (fileId: number) => {
     try {
       await dispatch(deleteFile(fileId)).unwrap()
       toast.success("File deleted successfully")
-      // Refresh search results if we're in search mode
       if (searchResults.length > 0) {
         performRecursiveSearch()
       }
@@ -357,7 +327,32 @@ const FilesPage = () => {
     }
   }
 
-  // Force refresh files
+  const handleEditTags = (file: FileItem) => {
+    setCurrentFile(file)
+    setIsTagModalOpen(true)
+  }
+
+  // const handleTagsUpdate = (updatedTags: TagDTO[]) => {
+  //   if (!currentFile) return
+
+   
+  //   if (searchResults.length > 0) {
+  //     const updatedSearchResults = searchResults.map((file) => {
+  //       if (file.id === currentFile.id) {
+  //         return { ...file, tags: updatedTags }
+  //       }
+  //       return file
+  //     })
+  //     setSearchResults(updatedSearchResults)
+  //   }
+
+  //   if (currentFolderId) {
+  //     dispatch(fetchFolderContents(currentFolderId))
+  //   }
+
+  //   toast.success("Tags updated successfully")
+  // }
+
   const handleRefresh = () => {
     if (searchResults.length > 0) {
       performRecursiveSearch()
@@ -367,7 +362,6 @@ const FilesPage = () => {
     toast.success("Refreshing files...")
   }
 
-  // Clear all filters
   const clearAllFilters = () => {
     setSearchQuery("")
     setSelectedTags([])
@@ -400,6 +394,7 @@ const FilesPage = () => {
               onPreview={() => handlePreview(file)}
               onDownload={() => handleDownload(file)}
               onDelete={() => handleDelete(file.id)}
+              onEditTags={() => handleEditTags(file)}
             />
           ))}
         </div>
@@ -596,7 +591,7 @@ const FilesPage = () => {
                     Sort: {sortOption.split("-")[0].charAt(0).toUpperCase() + sortOption.split("-")[0].slice(1)}
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent>
+                <DropdownMenuContent className="bg-white shadow-lg border border-gray-200">
                   <DropdownMenuLabel>Sort by</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuRadioGroup
@@ -638,7 +633,7 @@ const FilesPage = () => {
                     <SlidersHorizontal className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-[300px]">
+                <DropdownMenuContent align="end" className="w-[300px] bg-white shadow-lg border border-gray-200">
                   <DropdownMenuLabel>Filters</DropdownMenuLabel>
                   <DropdownMenuSeparator />
 
@@ -789,6 +784,7 @@ const FilesPage = () => {
                           onPreview={() => handlePreview(file)}
                           onDownload={() => handleDownload(file)}
                           onDelete={() => handleDelete(file.id)}
+                          onEditTags={() => handleEditTags(file)}
                         />
                       ))}
                     </div>
@@ -816,6 +812,17 @@ const FilesPage = () => {
           files={filteredAndSortedFiles}
           onDownload={handleDownload}
         />
+
+        {currentFile && (
+          <FileTagModal
+            isOpen={isTagModalOpen}
+            onClose={() => {
+              setIsTagModalOpen(false)
+              setCurrentFile(null)
+            }}
+            file={currentFile}
+          />
+        )}
       </div>
     </DashboardLayout>
   )

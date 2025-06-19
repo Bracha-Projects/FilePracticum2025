@@ -64,7 +64,6 @@ builder.Services.AddScoped<ISearchService, SearchService>();
 builder.Services.AddScoped<IActivityService, ActivityService>();
 builder.Services.AddScoped<IOAuthService, OAuthService>();
 builder.Services.AddHttpClient();
-//Add dependencies to DataContext
 var host = Environment.GetEnvironmentVariable("MYSQL_HOST");
 var databaseName = Environment.GetEnvironmentVariable("MYSQL_DATABASE");
 var user = Environment.GetEnvironmentVariable("MYSQL_USER");
@@ -73,8 +72,7 @@ var port = Environment.GetEnvironmentVariable("MYSQL_PORT") ?? "3306";
 
 var connectionString = $"Server={host};Port={port};Database={databaseName};Uid={user};Pwd={password};";
 Console.WriteLine(connectionString);
-//builder.Services.AddDbContext<TagitDBContext>(options =>
-//    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
+
 builder.Services.AddDbContextPool<TagitDBContext>(options =>
     options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
 

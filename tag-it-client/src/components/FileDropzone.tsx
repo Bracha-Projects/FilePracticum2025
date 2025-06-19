@@ -41,13 +41,11 @@ const FileDropzone: React.FC<FileDropzoneProps> = ({ onFilesAdded, className }) 
     if (e.target.files) {
       const newFiles = Array.from(e.target.files)
       processFiles(newFiles)
-      // Reset file input value so the same file can be selected again
       e.target.value = ""
     }
   }, [])
 
   const processFiles = (files: File[]) => {
-    // In a real app, you would upload these files to your server
     const filesWithProgress = files.map((file) => ({
       file,
       progress: 0,
@@ -57,7 +55,6 @@ const FileDropzone: React.FC<FileDropzoneProps> = ({ onFilesAdded, className }) 
     setUploadedFiles((prev) => [...prev, ...filesWithProgress])
     onFilesAdded(files)
 
-    // Simulate file upload progress
     filesWithProgress.forEach((fileObj, index) => {
       fileObj.status = "uploading"
       simulateUploadProgress(filesWithProgress.length - files.length + index)

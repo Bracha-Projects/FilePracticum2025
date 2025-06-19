@@ -41,7 +41,6 @@ const FileTagEditor: React.FC<FileTagEditorProps> = ({ file, onTagsUpdate, onClo
     } catch (error) {
       console.error("Failed to fetch file tags:", error)
       toast.error("Failed to load tags")
-      // Fallback to file.tags if available
       if (file.tags) {
         setTags(file.tags)
       }
@@ -135,7 +134,6 @@ const FileTagEditor: React.FC<FileTagEditorProps> = ({ file, onTagsUpdate, onClo
     setIsRefreshing(true)
 
     try {
-      // Call AI service to regenerate tags
       const response = await axiosInstance.post<Tag[]>(`/api/File/${file.id}/regenerate-tags`)
 
       setTags(response.data)

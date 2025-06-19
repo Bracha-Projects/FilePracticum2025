@@ -83,7 +83,6 @@ const userStatsSlice = createSlice({
 
 export const { clearStats, updateFileCount, updateFolderCount, updateStorageUsed } = userStatsSlice.actions
 
-// Selectors
 export const selectUserStats = (state: RootState) => state.userStats.stats
 export const selectUserStatsLoading = (state: RootState) => state.userStats.loading
 export const selectUserStatsError = (state: RootState) => state.userStats.error

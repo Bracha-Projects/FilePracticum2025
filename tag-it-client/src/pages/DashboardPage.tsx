@@ -18,6 +18,7 @@ import { toast } from "sonner"
 import { useDispatch } from "react-redux"
 import { AppDispatch } from "@/redux/store"
 import { fetchRecentFiles } from "@/redux/slices/recentFilesSlice"
+import { Tag } from "@/types/Tag"
 
 interface UserStats {
   totalFiles: number
@@ -43,7 +44,7 @@ const DashboardPage = () => {
   })
   const [recentFiles, setRecentFiles] = useState<FileItem[]>([])
   const [activities, setActivities] = useState<ActivityItem[]>([])
-  const [popularTags, setPopularTags] = useState<{ name: string; count: number }[]>([])
+  const [popularTags, setPopularTags] = useState<Tag[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -57,7 +58,6 @@ const DashboardPage = () => {
     try {
       setLoading(true)
 
-      // Fetch user stats
       try {
         const statsResponse = await axiosInstance.get<UserStats>(`/api/User/${user?.id}/stats`)
         console.log("Stats response:", statsResponse.data)
@@ -66,7 +66,6 @@ const DashboardPage = () => {
         console.error("Error fetching user stats:", error)
       }
 
-      // Fetch recent files
       try {
         const recentFilesResponse = await axiosInstance.get<FileItem[]>(`/api/File/${user?.id}/recent-files?limit=5`)
         console.log("Recent files response:", recentFilesResponse.data)
@@ -75,9 +74,8 @@ const DashboardPage = () => {
       } catch (error) {
         console.error("Error fetching recent files:", error)
       }
-      //Fetch popular tags
       try {
-        const tagsResponse = await axiosInstance.get<{ name: string; count: number }[]>(`/api/Tag/popular`)
+        const tagsResponse = await axiosInstance.get<Tag[]>(`/api/Tag/popular`)
         console.log("Popular tags response:", tagsResponse.data)
         setPopularTags(tagsResponse.data || [])
       } catch (error) {
@@ -85,7 +83,6 @@ const DashboardPage = () => {
         setPopularTags([])
       }
 
-      // Fetch recent activity
       try {
         const activityResponse = await axiosInstance.get<ActivityItem[]>(`/api/User/${user?.id}/recent-activity`)
         console.log("Recent activity response:", activityResponse.data)
@@ -132,7 +129,6 @@ const DashboardPage = () => {
       await axiosInstance.delete(`/api/File/${fileId}`)
       setRecentFiles((prev) => prev.filter((file) => file.id !== fileId))
       toast.success("File deleted successfully")
-      // Refresh stats after deletion
       fetchDashboardData()
     } catch (error) {
       console.error("Error deleting file:", error)
@@ -176,9 +172,8 @@ const DashboardPage = () => {
     )
   }
 
-  // Calculate storage percentage correctly
   const storageUsedBytes = stats.totalSizeBytes || 0
-  const storageLimitBytes = 10 * 1024 * 1024 * 1024 // 10GB in bytes
+  const storageLimitBytes = 10 * 1024 * 1024 * 1024 
   const storagePercentage = storageUsedBytes > 0 ? Math.min((storageUsedBytes / storageLimitBytes) * 100, 100) : 0
 
   console.log("Storage calculation:", {
@@ -380,20 +375,14 @@ const DashboardPage = () => {
                 {popularTags.length > 0 ? (
                   popularTags.map((tag, index) => (
                     <div
-                      key={`${tag.name}-${index}`}
+                      key={`${tag.tagName}-${index}`}
                       className="px-3 py-1.5 rounded-full text-sm flex items-center"
                       style={{
                         backgroundColor: "rgba(168, 235, 199, 0.2)",
                         color: "#3a5269",
                       }}
                     >
-                      <span>{tag.name}</span>
-                      <span
-                        className="ml-2 text-xs px-1.5 py-0.5 rounded-full"
-                        style={{ backgroundColor: "rgba(168, 235, 199, 0.4)" }}
-                      >
-                        {tag.count}
-                      </span>
+                      <span>{tag.tagName}</span>
                     </div>
                   ))
                 ) : (

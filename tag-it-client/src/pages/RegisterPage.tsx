@@ -15,7 +15,6 @@ import { toast } from "sonner";
 import axios from "@/utils/axiosInstance";
 import { setUser } from "@/redux/slices/userSlice";
 
-// Import types
 import { UserPostModel } from "@/types/UserPostModel";
 import { AuthResponse } from "@/types/AuthResponse";
 import OAuthLogin from "@/components/OAuthLogin";
@@ -73,10 +72,8 @@ const RegisterPage: React.FC = () => {
 
       const data = response.data;
 
-      // Save user details and token in Redux
       dispatch(setUser({ user: data.user, token: data.token }));
 
-      // Save token in localStorage
       localStorage.setItem("token", data.token);
 
       toast.success("Your account has been created successfully!");

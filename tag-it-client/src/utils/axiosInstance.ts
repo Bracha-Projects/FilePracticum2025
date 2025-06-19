@@ -8,7 +8,6 @@ const axiosInstance = axios.create({
   },
 })
 
-// Add a request interceptor to include the auth token from Redux
 axiosInstance.interceptors.request.use(
   (config) => {
     const state = store.getState()
@@ -24,14 +23,12 @@ axiosInstance.interceptors.request.use(
   },
 )
 
-// Add a response interceptor to handle common errors
 axiosInstance.interceptors.response.use(
   (response) => {
     return response
   },
   (error) => {
     if (error.response && error.response.status === 401) {
-      // Clear user data from Redux and redirect to login
       const { dispatch } = store
       dispatch({ type: "user/logout" })
       window.location.href = "/login"

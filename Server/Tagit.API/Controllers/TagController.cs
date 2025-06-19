@@ -107,6 +107,8 @@ namespace Tagit.API.Controllers
             tag.Id = tagId;
 
             var updatedTag = await _tagService.UpdateTagAsync(tag);
+            await _activityService.LogActivityAsync(userId.Value, "Updated Tag", updatedTag.TagName);
+
             if (updatedTag == null)
                 return NotFound();
 
@@ -122,6 +124,8 @@ namespace Tagit.API.Controllers
                 return Unauthorized("User not authenticated");
 
             var result = await _tagService.DeleteTagAsync(id);
+            await _activityService.LogActivityAsync(userId.Value, "Deleted Tag: ", id.ToString());
+
             if (!result)
             {
                 return NotFound();

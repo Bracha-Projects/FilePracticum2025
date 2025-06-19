@@ -21,8 +21,6 @@ const OAuthLogin: React.FC<OAuthLoginProps> = ({ onSuccess }) => {
   const handleGoogleLogin = async () => {
     setIsLoading(true)
     try {
-      // This would typically use Google's OAuth library
-      // For now, we'll simulate the flow
       const googleToken = await getGoogleAccessToken()
 
       if (googleToken) {
@@ -60,12 +58,8 @@ const OAuthLogin: React.FC<OAuthLoginProps> = ({ onSuccess }) => {
     }
   }
 
-  // Simulated function - replace with actual Google OAuth implementation
   const getGoogleAccessToken = async (): Promise<string | null> => {
-    // Implement Google OAuth flow here
-    // This is a placeholder
     return new Promise((resolve) => {
-      // Simulate OAuth flow
       setTimeout(() => {
         resolve("mock-google-token")
       }, 1000)
