@@ -1,6 +1,6 @@
 import type React from "react"
 import { Link, useLocation } from "react-router-dom"
-import { Layout, Upload, Settings, FolderOpen, Tag, UserCircle, Download } from "lucide-react"
+import { Layout, Upload, Settings, FolderOpen, UserCircle } from "lucide-react"
 import Logo from "./Logo"
 import { cn } from "@/lib/utils"
 
@@ -37,8 +37,8 @@ const DashboardSidebar: React.FC = () => {
     { path: "/dashboard", icon: <Layout className="h-4 w-4" />, label: "Dashboard" },
     { path: "/files", icon: <FolderOpen className="h-4 w-4" />, label: "Files" },
     { path: "/upload", icon: <Upload className="h-4 w-4" />, label: "Upload Files" },
-    { path: "/download", icon: <Download className="h-4 w-4" />, label: "Download Files" },
-    { path: "/tags", icon: <Tag className="h-4 w-4" />, label: "Tags" },
+    // { path: "/download", icon: <Download className="h-4 w-4" />, label: "Download Files" },
+    // { path: "/tags", icon: <Tag className="h-4 w-4" />, label: "Tags" },
     { path: "/profile", icon: <UserCircle className="h-4 w-4" />, label: "Profile" },
     { path: "/settings", icon: <Settings className="h-4 w-4" />, label: "Settings" },
   ]
@@ -53,7 +53,7 @@ const DashboardSidebar: React.FC = () => {
       <div className="px-3 py-4">
         <p className="mb-2 px-3 text-xs uppercase text-[#A8EBC7] font-bold">Main</p>
         <nav className="space-y-1">
-          {sidebarLinks.slice(0, 5).map((link) => (
+          {sidebarLinks.slice(0, 3).map((link) => (
             <SidebarLink
               key={link.path}
               to={link.path}
@@ -68,7 +68,7 @@ const DashboardSidebar: React.FC = () => {
       <div className="px-3 py-4 mt-2">
         <p className="mb-2 px-3 text-xs uppercase text-[#A8EBC7] font-bold">User</p>
         <nav className="space-y-1">
-          {sidebarLinks.slice(5).map((link) => (
+          {sidebarLinks.slice(3).map((link) => (
             <SidebarLink
               key={link.path}
               to={link.path}
