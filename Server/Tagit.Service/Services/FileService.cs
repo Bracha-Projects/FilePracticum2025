@@ -123,7 +123,8 @@ namespace Tagit.Service.Services
                 file.IsDeleted = true;
                 await _fileRepository.UpdateFileAsync(file);
 
-                _logger.LogInformation($"File with ID {fileId} has// Successfully marked as deleted
+                _logger.LogInformation($"File with ID {fileId} has// Successfully marked as deleted");
+                return true;
             }
             catch (Exception ex)
             {
