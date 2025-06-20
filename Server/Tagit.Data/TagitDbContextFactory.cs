@@ -12,7 +12,6 @@ namespace Tagit.Data
     {
         public TagitDBContext CreateDbContext(string[] args)
         {
-            // טוען משתני סביבה
             DotNetEnv.Env.Load();
 
             var host = Environment.GetEnvironmentVariable("MYSQL_HOST");

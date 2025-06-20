@@ -26,29 +26,24 @@ namespace Tagit.Service.Services
             _userService = userService;
         }
 
-        // Add a new folder
         public async Task<FolderDTO> AddFolderAsync(FolderDTO folder)
         {
             var folderToAdd = _mapper.Map<Folder>(folder);
-            folder.CreatedAt = DateTime.UtcNow; // Set creation time
-            //var user = _userService.GetUserById(folderToAdd.OwnerId);
+            folder.CreatedAt = DateTime.UtcNow; 
             return _mapper.Map<FolderDTO>(await _folderRepository.AddFolderAsync(folderToAdd));
         }
 
-        // Get a folder by its ID
         public async Task<FolderDTO> GetFolderByIdAsync(int folderId)
         {
             return _mapper.Map<FolderDTO>(await _folderRepository.GetFolderByIdAsync(folderId));
         }
 
-        // Get all folders by parent folder ID
         public async Task<List<FolderDTO>> GetFoldersInParentAsync(int userId, int parentFolderId)
         {
             var folders = await _folderRepository.GetFoldersByParentAsync(userId, parentFolderId);
             return _mapper.Map<List<FolderDTO>>(folders);
         }
 
-        // Update an existing folder
         public async Task<FolderDTO> UpdateFolderAsync(int folderId, FolderDTO updatedData)
         {
             var existingFolder = await _folderRepository.GetFolderByIdAsync(folderId);
@@ -69,7 +64,6 @@ namespace Tagit.Service.Services
         }
 
 
-        // Soft delete a folder
         public async Task SoftDeleteFolderAsync(int folderId)
         {
             await _folderRepository.SoftDeleteFolderAsync(folderId);
@@ -77,14 +71,12 @@ namespace Tagit.Service.Services
 
         public async Task<string> GetFolderPathByIdAsync(int folderId)
         {
-            // Retrieve folder by its Id
             var folder = await _folderRepository.GetFolderByIdAsync(folderId);
             if (folder == null)
             {
                 throw new InvalidOperationException("Folder not found");
             }
 
-            // If the folder has a parent, recursively build its path
             var folderPath = new StringBuilder();
             while (folder != null)
             {

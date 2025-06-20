@@ -49,7 +49,6 @@ namespace Tagit.Data.Repositories
                 .Include(f => f.FileTags)
                 .Where(f => f.OwnerId == model.OwnerId && !f.IsDeleted);
 
-            // סינון לפי תגיות (אם יש)
             if (model.Tags != null && model.Tags.Any())
             {
                 query = query.Where(f =>
@@ -57,13 +56,11 @@ namespace Tagit.Data.Repositories
                 );
             }
 
-            // סינון לפי שם קובץ
             if (!string.IsNullOrEmpty(model.FileNameContains))
             {
                 query = query.Where(f => f.FileName.Contains(model.FileNameContains));
             }
 
-            // סינון לפי תאריכים
             if (model.FromDate.HasValue)
             {
                 query = query.Where(f => f.DateCreated >= model.FromDate.Value);
@@ -74,7 +71,6 @@ namespace Tagit.Data.Repositories
                 query = query.Where(f => f.DateCreated <= model.ToDate.Value);
             }
 
-            // סינון לפי תיקיה ותתי־תיקיות
             if (model.FolderId.HasValue)
             {
                 var folderIds = await GetDescendantFolderIdsAsync(model.FolderId.Value);

@@ -21,7 +21,7 @@ namespace Tagit.Service.Services
         public string GenerateJwtToken(User user)
         {
             var jwtSettings = _configuration.GetSection("Jwt");
-            var secretKey = Encoding.UTF8.GetBytes(jwtSettings["Secret"]); // Use UTF8 encoding
+            var secretKey = Encoding.UTF8.GetBytes(jwtSettings["Secret"]);
             var tokenHandler = new JwtSecurityTokenHandler();
             var tokenDescriptor = new SecurityTokenDescriptor
             {

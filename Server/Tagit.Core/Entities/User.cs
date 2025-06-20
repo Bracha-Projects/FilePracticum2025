@@ -26,11 +26,10 @@ namespace Tagit.Core.Entities
         public string? ProfileImageUrl { get; set; } 
         public DateTime? LastLoginAt { get; set; }
         public int RootFolderId { get; set; }
-        public string Provider { get; set; } // "Google", "GitHub", או null
-        public string ProviderId { get; set; } // ה-ID שמתקבל מה-OAuth
+        public string Provider { get; set; } 
+        public string ProviderId { get; set; } 
 
 
-        // connections
         public List<File> Files { get; set; }
         public List<Log> Logs { get; set; }
         public List<Role> Roles { get; set; }

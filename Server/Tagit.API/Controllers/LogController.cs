@@ -20,7 +20,7 @@ namespace Tagit.API.Controllers
         }
 
         [HttpGet]
-        [Authorize(Roles = "Admin")] // רק אדמין יכול לגשת ללוגים
+        [Authorize(Roles = "Admin")] 
         public async Task<IActionResult> GetAllLogs()
         {
             var logs = await _logService.GetAllLogsAsync();

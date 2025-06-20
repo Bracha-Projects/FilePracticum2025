@@ -9,7 +9,7 @@ namespace Tagit.Core.Models
     public class FileSearchModel
     {
             public int OwnerId { get; set; }
-            public int? FolderId { get; set; } // ← הוספה חשובה
+            public int? FolderId { get; set; }
             public List<string>? Tags { get; set; }
             public DateTime? FromDate { get; set; }
             public DateTime? ToDate { get; set; }

@@ -1,5 +1,7 @@
 using Amazon.S3;
 using DotEnv.Core;
+using FirebaseAdmin;
+using Google.Apis.Auth.OAuth2;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -15,22 +17,23 @@ using Tagit.Data;
 using Tagit.Data.Repositories;
 using Tagit.Service.Services;
 var builder = WebApplication.CreateBuilder(args);
-Console.WriteLine($"Environment: {builder.Environment.EnvironmentName}");
 if (builder.Environment.IsDevelopment())
 {
     new EnvLoader().Load();
 }
-// Add services to the container.
-builder.Services.AddJwtAuthentication(builder.Configuration); // Use the middleware
+builder.Services.AddJwtAuthentication(builder.Configuration); 
 
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 var configuration = builder.Configuration;
+FirebaseApp.Create(new AppOptions
+{
+    Credential = GoogleCredential.FromFile("firebase-service-account.json")
+});
+// Load environment variables from .env file if it exists
 builder.Services.AddSingleton<IConfiguration>(configuration);
-//builder.Services.AddDefaultAWSOptions(builder.Configuration.GetAWSOptions()); // Loads AWS credentials and region from appsettings.json or environment variables
-//builder.Services.AddAWSService<IAmazonS3>();
+
 builder.Services.AddSingleton<IAmazonS3>(provider =>
 {
     var awsOptions = configuration.GetSection("AWS");

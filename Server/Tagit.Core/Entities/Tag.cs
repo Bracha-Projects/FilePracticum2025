@@ -15,7 +15,6 @@ namespace Tagit.Core.Entities
         [MaxLength(255)]
         public string TagName { get; set; }
 
-        // connections
         public List<File> Files { get; set; } 
         public Tag()
         {

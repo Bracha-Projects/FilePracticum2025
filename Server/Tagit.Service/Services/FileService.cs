@@ -33,7 +33,6 @@ namespace Tagit.Service.Services
             _logger = logger;
         }
 
-        // Generate a presigned URL for uploading the file to S3
         public async Task<string> GetPresignedUrlAsync(string fileName, string folderPath)
         {
             try
@@ -41,11 +40,11 @@ namespace Tagit.Service.Services
                 var fileKey = $"{folderPath.TrimEnd('/')}/{fileName}".TrimStart('/');
                 var request = new GetPreSignedUrlRequest
                 {
-                    BucketName = "tagitbucket", // שם ה-Bucket שלך
+                    BucketName = "tagitbucket", 
                     Key = fileKey,
                     Verb = HttpVerb.PUT,
-                    Expires = DateTime.UtcNow.AddMinutes(15), // תוקף הקישור
-                    ContentType = GetContentType(fileName) // התאם את סוג הקובץ בהתאם לצורך
+                    Expires = DateTime.UtcNow.AddMinutes(15), 
+                    ContentType = GetContentType(fileName) 
                 };
 
                 string presignedUrl = _s3Client.GetPreSignedURL(request);
@@ -70,7 +69,7 @@ namespace Tagit.Service.Services
             {
                 BucketName = "tagitbucket",
                 Key = key,
-                Expires = DateTime.UtcNow.AddMinutes(15), // תוקף הקישור
+                Expires = DateTime.UtcNow.AddMinutes(15), 
                 ResponseHeaderOverrides = new ResponseHeaderOverrides
                 {
                     ContentDisposition = "attachment; filename=\"" + key + "\""
@@ -92,7 +91,6 @@ namespace Tagit.Service.Services
 
             return await Task.FromResult(_s3Client.GetPreSignedURL(request));
         }
-        // Add file metadata to the database
         public async Task<FileDTO> AddFileAsync(FileDTO file)
         {
             file.DateCreated = DateTime.UtcNow; 
@@ -100,13 +98,11 @@ namespace Tagit.Service.Services
             return _mapper.Map<FileDTO>(uploadedFile);
         }
 
-        // Retrieve a file by its ID
         public async Task<FileDTO> GetFileByIdAsync(int fileId)
         {
             return _mapper.Map<FileDTO>(await _fileRepository.GetFileByIdAsync(fileId));
         }
 
-        // Update file metadata (e.g., after a soft delete)
         public async Task<FileDTO> UpdateFileAsync(FileDTO file)
         {
             var updatedFile = await _fileRepository.UpdateFileAsync(_mapper.Map<File>(file));
@@ -121,19 +117,18 @@ namespace Tagit.Service.Services
                 if (file == null)
                 {
                     _logger.LogWarning($"File with ID {fileId} not found or already deleted.");
-                    return false; // File not found or already deleted
+                    return false; 
                 }
 
                 file.IsDeleted = true;
                 await _fileRepository.UpdateFileAsync(file);
 
-                _logger.LogInformation($"File with ID {fileId} has been successfully marked as deleted.");
-                return true; // Successfully marked as deleted
+                _logger.LogInformation($"File with ID {fileId} has// Successfully marked as deleted
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error deleting file");
-                return false; // Error during deletion
+                return false; 
             }
         }
 
@@ -152,7 +147,7 @@ namespace Tagit.Service.Services
             var provider = new FileExtensionContentTypeProvider();
             if (!provider.TryGetContentType(fileName, out var contentType))
             {
-                contentType = "application/pdf"; // Default if unknown
+                contentType = "application/pdf"; 
             }
             return contentType;
         }

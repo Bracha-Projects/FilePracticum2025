@@ -13,8 +13,8 @@ namespace Tagit.Core.Repositories
     {
         Task<User> GetByIdAsync(int id);
         Task<User> GetByEmailAsync(string email);
-        Task<User> AddAsync(User user); // שונה מ-AddUserAsync
-        Task<User> UpdateAsync(User user); // שונה מ-UpdateUserAsync
+        Task<User> AddAsync(User user); 
+        Task<User> UpdateAsync(User user); 
         Task<UserStatsModel> GetUserStatsAsync(int userId);
         Task<User> GetByProviderAsync(string provider, string providerId);
 

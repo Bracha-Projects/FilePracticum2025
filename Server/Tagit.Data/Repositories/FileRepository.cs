@@ -18,7 +18,6 @@ namespace Tagit.Data.Repositories
         {
             _context = context;
         }
-        // Add a new file record to the database
         public async Task<File> AddFileAsync(File file)
         {
             await _context.Files.AddAsync(file);
@@ -26,14 +25,12 @@ namespace Tagit.Data.Repositories
             return file;
         }
 
-        // Get a file by its ID
         public async Task<File> GetFileByIdAsync(int fileId)
         {
             return await _context.Files.Include(f => f.FileTags) 
-                .FirstOrDefaultAsync(f => f.Id == fileId && !f.IsDeleted); // Soft delete consideration
+                .FirstOrDefaultAsync(f => f.Id == fileId && !f.IsDeleted); 
         }
 
-        // Update the file record in the database
         public async Task<File> UpdateFileAsync(File file)
         {
             _context.Files.Update(file);
@@ -41,7 +38,6 @@ namespace Tagit.Data.Repositories
             return file;
         }
 
-        // Get files by folder (if folderId is provided)
         public async Task<List<File>> GetFilesByFolderAsync(int folderId)
         {
             return await _context.Files
@@ -50,7 +46,6 @@ namespace Tagit.Data.Repositories
                 .ToListAsync();
         }
 
-        // Get all files, including deleted ones if needed
         public async Task<List<File>> GetAllFilesAsync()
         {
             return await _context.Files.ToListAsync();

@@ -9,17 +9,16 @@ namespace Tagit.Core.Entities
 {
     public class Folder
     {
-        public int Id { get; set; } // מזהה ייחודי
+        public int Id { get; set; } 
         [MaxLength(255)]
-        public string Name { get; set; } // שם התיקיה
-        public int? ParentFolderId { get; set; } // תיקיית אב (null אם שורש)
-        public int OwnerId { get; set; } // בעל התיקיה
-        public DateTime CreatedAt { get; set; } // תאריך יצירה
-        public DateTime UpdatedAt { get; set; } // תאריך עדכון אחרון
-        public bool IsDeleted { get; set; } // דגל למחיקה רכה
+        public string Name { get; set; } 
+        public int? ParentFolderId { get; set; } 
+        public int OwnerId { get; set; } 
+        public DateTime CreatedAt { get; set; } 
+        public DateTime UpdatedAt { get; set; } 
+        public bool IsDeleted { get; set; } 
         
 
-        //connections
         public User Owner { get; set; }
         public Folder ParentFolder { get; set; }
         public List<Folder> SubFolders { get; set; } // תיקיות־בת

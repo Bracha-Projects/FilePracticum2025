@@ -38,7 +38,6 @@ namespace Tagit.Service.Services
             {
                 return null;
             }
-            // שימוש ב-PasswordHasher לאימות סיסמה
             var result = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, password);
             if (result == PasswordVerificationResult.Success)
             {
@@ -52,7 +51,6 @@ namespace Tagit.Service.Services
 
         public async Task<UserDTO> RegisterUserAsync(UserDTO user)
         {
-            // בדיקה אם האימייל קיים
             if (await _userRepository.GetByEmailAsync(user.Email) != null)
             {
                 throw new Exception("Email already in use");
@@ -73,7 +71,6 @@ namespace Tagit.Service.Services
                 return null;
             }
 
-            // עדכון שדות משתמש
             if(user.FirstName != default)
                 existingUser.FirstName = user.FirstName;
             if(user.LastName != default)
@@ -83,7 +80,6 @@ namespace Tagit.Service.Services
             if (!string.IsNullOrEmpty(user.Password) && user.Password != default) 
             {
                 existingUser.PasswordHash = user.Password;
-                // Hash של הסיסמה החדשה אם סופקה
                 existingUser.PasswordHash = _passwordHasher.HashPassword(existingUser, user.Password);
             }
 
@@ -94,7 +90,6 @@ namespace Tagit.Service.Services
 
             if (user.RootFolderId != default)
                 existingUser.RootFolderId = user.RootFolderId;
-            // עדכון שדות נוספים לפי הצורך
 
             await _userRepository.UpdateAsync(existingUser);
             return _mapper.Map<UserDTO>(existingUser);

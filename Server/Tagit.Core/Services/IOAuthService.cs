@@ -4,13 +4,14 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Tagit.Core.DTOs;
+using Tagit.Core.Models;
 
 namespace Tagit.Core.Services
 {
     public interface IOAuthService
     {
-          Task<UserDTO> ExternalLoginAsync(string provider, string token);
-        Task<string> ExchangeGitHubCodeForAccessToken(string code);
-
+        Task<FirebaseUserInfo?> VerifyFirebaseTokenAsync(string idToken);
+        Task<UserDTO?> FindOrCreateUserAsync(FirebaseUserInfo firebaseUser);
     }
+
 }

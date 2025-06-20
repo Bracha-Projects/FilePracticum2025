@@ -19,7 +19,6 @@ namespace Tagit.Data.Repositories
             _context = context;
         }
 
-        // Add a new folder record to the database
         public async Task<Folder> AddFolderAsync(Folder folder)
         {
             await _context.Folders.AddAsync(folder);
@@ -27,14 +26,12 @@ namespace Tagit.Data.Repositories
             return folder;
         }
 
-        // Get a folder by its ID
         public async Task<Folder> GetFolderByIdAsync(int folderId)
         {
             return await _context.Folders
-                .FirstOrDefaultAsync(f => f.Id == folderId && !f.IsDeleted); // Soft delete consideration
+                .FirstOrDefaultAsync(f => f.Id == folderId && !f.IsDeleted); 
         }
 
-        // Get all folders under a specific parent folder
         public async Task<List<Folder>> GetFoldersByParentAsync(int userId, int parentFolderId)
         {
             return await _context.Folders
@@ -42,20 +39,17 @@ namespace Tagit.Data.Repositories
                 .ToListAsync();
         }
 
-        // Get all folders, including deleted ones if needed
         public async Task<List<Folder>> GetAllFoldersAsync()
         {
             return await _context.Folders.ToListAsync();
         }
 
-        // Update a folder record in the database
         public async Task<Folder> UpdateFolderAsync(Folder folder)
         {
             await _context.SaveChangesAsync();
             return folder;
         }
 
-        // Soft delete a folder (set IsDeleted to true)
         public async Task SoftDeleteFolderAsync(int folderId)
         {
             var folder = await GetFolderByIdAsync(folderId);

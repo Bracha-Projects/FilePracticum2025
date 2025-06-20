@@ -53,7 +53,7 @@ namespace Tagit.Data.Repositories
             }
             catch (DbUpdateConcurrencyException)
             {
-                return null; // Handle concurrency issues
+                return null; 
             }
         }
 

@@ -41,7 +41,7 @@ namespace Tagit.API.Controllers
                 {
                     Name = $"RootFolder_{registeredUser.Id}/",
                     OwnerId = registeredUser.Id,
-                    ParentFolderId = null, // Assuming this is the root folder
+                    ParentFolderId = null, 
                     CreatedAt = DateTime.UtcNow
                 };
                 var createdFolder = await _folderService.AddFolderAsync(folder);
@@ -66,7 +66,6 @@ namespace Tagit.API.Controllers
             var user = await _userService.GetUserByEmail(request.Email);
             if (user == null)
             {
-                // משתמש לא קיים
                 return NotFound("User not found");
             }
             var userDTO = await _userService.AuthenticateUserAsync(request.Email, request.Password);
@@ -96,19 +95,17 @@ namespace Tagit.API.Controllers
 
 
         [HttpPut("settings")]
-        [Authorize] // דורש אימות
+        [Authorize] 
         public async Task<IActionResult> UpdateUserSettings([FromBody] UserPostModel userSettings)
         {
-            // קבלת מזהה המשתמש המחובר
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (userId == null || !int.TryParse(userId, out int id))
             {
                 return BadRequest("Invalid user ID.");
             }
 
-            // מיפוי ה-DTO למודל הישות
             var userToUpdate = _mapper.Map<UserDTO>(userSettings);
-            userToUpdate.Id = id; // שמירה על ה-ID של המשתמש המחובר
+            userToUpdate.Id = id; 
 
             try
             {
@@ -117,7 +114,7 @@ namespace Tagit.API.Controllers
                 {
                     return NotFound("User not found.");
                 }
-                return Ok(_mapper.Map<UserDTO>(updatedUser)); // החזרת DTO מעודכן
+                return Ok(_mapper.Map<UserDTO>(updatedUser)); 
             }
             catch (Exception ex)
             {
