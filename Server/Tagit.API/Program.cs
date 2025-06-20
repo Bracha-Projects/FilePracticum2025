@@ -27,9 +27,11 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 var configuration = builder.Configuration;
+var firebaseJson = Environment.GetEnvironmentVariable("FIREBASE_CREDENTIALS_JSON");
+var firebaseCredential = GoogleCredential.FromJson(firebaseJson);
 FirebaseApp.Create(new AppOptions
 {
-    Credential = GoogleCredential.FromFile("firebase-service-account.json")
+    Credential = firebaseCredential
 });
 // Load environment variables from .env file if it exists
 builder.Services.AddSingleton<IConfiguration>(configuration);
@@ -74,7 +76,6 @@ var password = Environment.GetEnvironmentVariable("MYSQL_PASSWORD");
 var port = Environment.GetEnvironmentVariable("MYSQL_PORT") ?? "3306";
 
 var connectionString = $"Server={host};Port={port};Database={databaseName};Uid={user};Pwd={password};";
-Console.WriteLine(connectionString);
 
 builder.Services.AddDbContextPool<TagitDBContext>(options =>
     options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
