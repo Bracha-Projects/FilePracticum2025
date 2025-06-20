@@ -9,6 +9,8 @@ import { toast } from "sonner"
 import axiosInstance from "@/utils/axiosInstance"
 import { OAuthLoginRequest } from "@/types/OAuthLoginRequest"
 import { AuthResponse } from "@/types/AuthResponse"
+import { signInWithPopup } from "firebase/auth"
+import { auth, provider } from "@/utils/firebase"
 
 interface OAuthLoginProps {
   onSuccess?: () => void
@@ -21,7 +23,8 @@ const OAuthLogin: React.FC<OAuthLoginProps> = ({ onSuccess }) => {
   const handleGoogleLogin = async () => {
     setIsLoading(true)
     try {
-      const googleToken = await getGoogleAccessToken()
+      const result = await signInWithPopup(auth, provider)
+      const googleToken = await result.user.getIdToken() 
 
       if (googleToken) {
         await handleOAuthLogin("Google", googleToken)
@@ -56,14 +59,6 @@ const OAuthLogin: React.FC<OAuthLoginProps> = ({ onSuccess }) => {
       console.error(`${provider} OAuth login failed:`, error)
       toast.error(`${provider} login failed`)
     }
-  }
-
-  const getGoogleAccessToken = async (): Promise<string | null> => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve("mock-google-token")
-      }, 1000)
-    })
   }
 
   return (
