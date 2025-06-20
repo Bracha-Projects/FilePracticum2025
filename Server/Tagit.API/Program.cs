@@ -57,6 +57,7 @@ builder.Services.AddScoped<ILogRepository, LogRepository>();
 builder.Services.AddScoped<IFolderRepository, FolderRepository>();
 builder.Services.AddScoped<ISearchRepository, SearchRepository>();
 builder.Services.AddScoped<IActivityRepository, ActivityRepository>();
+builder.Services.AddScoped<IAuthRepository, AuthRepository>();
 builder.Services.AddScoped<TagsFromDtoResolver>();
 //Add dependencies to the Services
 builder.Services.AddScoped<IUserService, UserService>();
@@ -68,6 +69,8 @@ builder.Services.AddScoped<IFolderService, FolderService>();
 builder.Services.AddScoped<ISearchService, SearchService>();
 builder.Services.AddScoped<IActivityService, ActivityService>();
 builder.Services.AddScoped<IOAuthService, OAuthService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddHttpClient();
 var host = Environment.GetEnvironmentVariable("MYSQL_HOST");
 var databaseName = Environment.GetEnvironmentVariable("MYSQL_DATABASE");

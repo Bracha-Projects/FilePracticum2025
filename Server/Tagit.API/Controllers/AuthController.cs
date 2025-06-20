@@ -13,12 +13,14 @@ namespace Tagit.API.Controllers
         private readonly IOAuthService _oAuthService;
         private readonly IJwtService _jwtService;
         private readonly IMapper _mapper;
+        private readonly IAuthService _authService;
 
-        public AuthController(IOAuthService oAuthService, IJwtService jwtService, IMapper mapper)
+        public AuthController(IOAuthService oAuthService, IJwtService jwtService, IMapper mapper, IAuthService authService)
         {
             _oAuthService = oAuthService;
             _jwtService = jwtService;
             _mapper = mapper;
+            _authService = authService;
         }
 
         [HttpPost("oauth-login")]
@@ -39,6 +41,21 @@ namespace Tagit.API.Controllers
                 Token = token,
                 User = user
             });
+        }
+
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPassword([FromBody] string email)
+        {
+            var link = await _authService.RequestPasswordResetAsync(email);
+            return Ok(new { resetLink = link }); 
+        }
+
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordPostModel dto)
+        {
+            var result = await _authService.ResetPasswordAsync(dto.Token, dto.NewPassword);
+            if (!result) return BadRequest("Invalid or expired token");
+            return Ok("Password reset successfully");
         }
     }
 }

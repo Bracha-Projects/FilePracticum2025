@@ -18,6 +18,8 @@ namespace Tagit.Data
         public Microsoft.EntityFrameworkCore.DbSet<Permission> Permissions { get; set; }
         public DbSet<Folder> Folders { get; set; }
         public DbSet<Activity> Activities { get; set; }
+        public DbSet<PasswordResetToken> PasswordResetTokens { get; set; }
+
 
         public TagitDBContext(DbContextOptions<TagitDBContext> options) : base(options)
         {

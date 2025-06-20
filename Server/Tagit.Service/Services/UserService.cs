@@ -18,7 +18,7 @@ namespace Tagit.Service.Services
     public class UserService : IUserService
     {
         private readonly IUserRepository _userRepository;
-        private readonly IPasswordHasher<User> _passwordHasher; // הוספת שירות Hash
+        private readonly IPasswordHasher<User> _passwordHasher; 
         private readonly IFileRepository _fileRepository;
         private readonly IFolderRepository _folderRepository;
         private readonly IMapper _mapper;
@@ -45,7 +45,6 @@ namespace Tagit.Service.Services
                 await _userRepository.UpdateAsync(user);
                 return _mapper.Map<UserDTO>(user);
             }
-            return null;
             return null;
         }
 
