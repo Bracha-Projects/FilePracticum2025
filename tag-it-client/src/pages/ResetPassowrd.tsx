@@ -1,6 +1,6 @@
+import axiosInstance from "@/utils/axiosInstance";
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import axios from "axios";
 
 export default function ResetPassword() {
   const [searchParams] = useSearchParams();
@@ -10,7 +10,7 @@ export default function ResetPassword() {
 
   const handleReset = async () => {
     try {
-      await axios.post("/api/Auth/reset-password", {
+      await axiosInstance.post("/api/Auth/reset-password", {
         token,
         newPassword: password,
       });

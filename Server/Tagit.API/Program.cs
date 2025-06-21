@@ -28,7 +28,6 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 var configuration = builder.Configuration;
 var firebaseJson = Environment.GetEnvironmentVariable("FIREBASE_CREDENTIALS_JSON");
-Console.WriteLine("firebase json");
 Console.WriteLine(firebaseJson);
 var firebaseCredential = GoogleCredential.FromJson(firebaseJson);
 FirebaseApp.Create(new AppOptions

@@ -28,7 +28,7 @@ const AppRoutes = () => {
       <Route path="/profile" element={<ProfilePage />} />
       <Route path="/settings" element={<SettingsPage />} />
       <Route path="/underConstruction" element={<UnderConstructionPage />} />
-        <Route path="/terms" element={<TermsPage />} />
+      <Route path="/terms" element={<TermsPage />} />
       <Route path="/privacy" element={<PrivacyPage />} />
       <Route path="/contact" element={<ContactPage />} />
       <Route path="/reset-password" element={<ResetPassword />} />

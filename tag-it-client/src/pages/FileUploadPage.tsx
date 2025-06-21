@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState, useCallback } from "react"
-import { Upload, X, CheckCircle2, FileText, Loader2, Tag, Plus, Edit2, RefreshCw } from "lucide-react"
+import { Upload, X, CheckCircle2, FileText, Loader2, Tag, Plus, Edit2 } from "lucide-react"
 import DashboardLayout from "@/layouts/DashboardLayout"
 import PageHeading from "@/components/PageHeading"
 import { Button } from "@/components/ui/button"
@@ -35,7 +35,6 @@ const UploadPage = () => {
   const [isHovering, setIsHovering] = useState(false)
   const [uploadedFiles, setUploadedFiles] = useState<UploadFile[]>([])
   const [newTag, setNewTag] = useState("")
-  const [isRefreshingTags, setIsRefreshingTags] = useState<number | null>(null)
 
   const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault()
@@ -362,35 +361,6 @@ const UploadPage = () => {
     })
   }
 
-  const refreshTags = async (fileIndex: number) => {
-    const fileObj = uploadedFiles[fileIndex]
-    if (!fileObj.id) return
-
-    setIsRefreshingTags(fileIndex)
-
-    try {
-      const response = await axiosInstance.post<TagType[]>(`/api/File/${fileObj.id}/regenerate-tags`)
-
-      setUploadedFiles((prev) => {
-        const updated = [...prev]
-        if (updated[fileIndex]) {
-          updated[fileIndex] = {
-            ...updated[fileIndex],
-            tags: response.data,
-          }
-        }
-        return updated
-      })
-
-      toast.success("Tags refreshed successfully")
-    } catch (error) {
-      console.error("Failed to refresh tags:", error)
-      toast.error("Failed to refresh tags")
-    } finally {
-      setIsRefreshingTags(null)
-    }
-  }
-
   return (
     <DashboardLayout>
       <PageHeading title="Upload Files" subtitle="Upload and manage your files with AI-powered tagging" />
@@ -488,20 +458,6 @@ const UploadPage = () => {
                                 <Tag className="h-4 w-4 text-[#4B6982]" />
                                 <span className="text-sm font-medium text-[#4B6982]">Tags:</span>
                               </div>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="h-7 px-2 text-xs"
-                                onClick={() => refreshTags(index)}
-                                disabled={isRefreshingTags === index}
-                              >
-                                {isRefreshingTags === index ? (
-                                  <Loader2 className="h-3 w-3 animate-spin mr-1" />
-                                ) : (
-                                  <RefreshCw className="h-3 w-3 mr-1" />
-                                )}
-                                Refresh Tags
-                              </Button>
                             </div>
 
                             <div className="flex flex-wrap gap-1">

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Tagit.API.PostModels;
 using Tagit.Core.Entities;
+using Tagit.Core.Models;
 using Tagit.Core.Services;
 
 namespace Tagit.API.Controllers
@@ -15,13 +16,15 @@ namespace Tagit.API.Controllers
         private readonly IJwtService _jwtService;
         private readonly IMapper _mapper;
         private readonly IAuthService _authService;
+        private readonly IEmailService _emailService;
 
-        public AuthController(IOAuthService oAuthService, IJwtService jwtService, IMapper mapper, IAuthService authService)
+        public AuthController(IOAuthService oAuthService, IJwtService jwtService, IMapper mapper, IAuthService authService, IEmailService emailService)
         {
             _oAuthService = oAuthService;
             _jwtService = jwtService;
             _mapper = mapper;
             _authService = authService;
+            _emailService = emailService;
         }
 
         [Authorize]
@@ -45,15 +48,25 @@ namespace Tagit.API.Controllers
             });
         }
 
-        [Authorize]
         [HttpPost("forgot-password")]
         public async Task<IActionResult> ForgotPassword([FromBody] string email)
         {
             var link = await _authService.RequestPasswordResetAsync(email);
-            return Ok(new { resetLink = link }); 
+            var emailRequest = new EmailRequest
+            {
+                To = email,
+                Subject = "Reset your password",
+                Body = $"Please reset your password by clicking the following link: {link}"
+            };
+
+            bool emailSent = await _emailService.SendEmailAsync(emailRequest);
+
+            if (emailSent)
+                return Ok(new { message = "Reset link sent to your email." });
+            else
+                return Ok(new { resetLink = link }); 
         }
 
-        [Authorize]
         [HttpPost("reset-password")]
         public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordPostModel dto)
         {
