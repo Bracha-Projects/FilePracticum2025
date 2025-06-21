@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Tagit.API.PostModels;
 using Tagit.Core.Entities;
@@ -23,6 +24,7 @@ namespace Tagit.API.Controllers
             _authService = authService;
         }
 
+        [Authorize]
         [HttpPost("oauth-login")]
         public async Task<IActionResult> OAuthLogin([FromBody] OAuthLoginRequest request)
         {
@@ -43,6 +45,7 @@ namespace Tagit.API.Controllers
             });
         }
 
+        [Authorize]
         [HttpPost("forgot-password")]
         public async Task<IActionResult> ForgotPassword([FromBody] string email)
         {
@@ -50,6 +53,7 @@ namespace Tagit.API.Controllers
             return Ok(new { resetLink = link }); 
         }
 
+        [Authorize]
         [HttpPost("reset-password")]
         public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordPostModel dto)
         {

@@ -1,6 +1,6 @@
 import type React from "react"
 import { Link, useLocation } from "react-router-dom"
-import { Layout, Upload, Settings, FolderOpen, UserCircle } from "lucide-react"
+import { Layout, Upload, FolderOpen, UserCircle } from "lucide-react"
 import Logo from "./Logo"
 import { cn } from "@/lib/utils"
 
@@ -40,7 +40,7 @@ const DashboardSidebar: React.FC = () => {
     // { path: "/download", icon: <Download className="h-4 w-4" />, label: "Download Files" },
     // { path: "/tags", icon: <Tag className="h-4 w-4" />, label: "Tags" },
     { path: "/profile", icon: <UserCircle className="h-4 w-4" />, label: "Profile" },
-    { path: "/settings", icon: <Settings className="h-4 w-4" />, label: "Settings" },
+    // { path: "/settings", icon: <Settings className="h-4 w-4" />, label: "Settings" },
   ]
 
   return (

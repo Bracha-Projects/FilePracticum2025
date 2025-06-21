@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useState, useEffect } from "react"
-import { Plus, X, TagIcon, Edit2, RefreshCw, Loader2 } from "lucide-react"
+import { Plus, X, TagIcon, Edit2, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -24,7 +24,6 @@ const FileTagEditor: React.FC<FileTagEditorProps> = ({ file, onTagsUpdate, onClo
   const [editingTag, setEditingTag] = useState<number | null>(null)
   const [editValue, setEditValue] = useState("")
   const [isLoading, setIsLoading] = useState(false)
-  const [isRefreshing, setIsRefreshing] = useState(false)
   const [initialLoading, setInitialLoading] = useState(true)
   const [popularTags, setPopularTags] = useState<Tag[]>([])
 
@@ -130,22 +129,6 @@ const FileTagEditor: React.FC<FileTagEditorProps> = ({ file, onTagsUpdate, onClo
     }
   }
 
-  const refreshTags = async () => {
-    setIsRefreshing(true)
-
-    try {
-      const response = await axiosInstance.post<Tag[]>(`/api/File/${file.id}/regenerate-tags`)
-
-      setTags(response.data)
-      onTagsUpdate?.(response.data)
-      toast.success("Tags refreshed successfully")
-    } catch (error) {
-      console.error("Failed to refresh tags:", error)
-      toast.error("Failed to refresh tags")
-    } finally {
-      setIsRefreshing(false)
-    }
-  }
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
@@ -214,16 +197,6 @@ const FileTagEditor: React.FC<FileTagEditorProps> = ({ file, onTagsUpdate, onClo
             <p className="text-sm text-[#4B6982]/70 mt-1">{file.fileName}</p>
           </div>
           <div className="flex gap-2">
-            <Button
-              onClick={refreshTags}
-              disabled={isRefreshing || isLoading}
-              size="sm"
-              variant="outline"
-              className="text-[#4B6982] border-[#4B6982]/30 hover:bg-[#A8EBC7]/10"
-            >
-              {isRefreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-              Refresh Tags
-            </Button>
             {onClose && (
               <Button onClick={onClose} size="sm" variant="outline" className="text-[#4B6982] border-[#4B6982]/30">
                 <X className="h-4 w-4" />
@@ -330,7 +303,6 @@ const FileTagEditor: React.FC<FileTagEditorProps> = ({ file, onTagsUpdate, onClo
           </p>
           <ul className="list-disc list-inside space-y-1 mt-1">
             <li>Click on any tag to edit it</li>
-            <li>Use "Refresh Tags" to regenerate AI suggestions</li>
             <li>Press Enter to quickly add a new tag</li>
             <li>Click on popular tags to add them to your file</li>
           </ul>

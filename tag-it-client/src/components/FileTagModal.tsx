@@ -202,7 +202,7 @@ import { useState, useEffect } from "react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { X, Plus, RefreshCw } from "lucide-react"
+import { X, Plus } from "lucide-react"
 import { toast } from "sonner"
 import axiosInstance from "@/utils/axiosInstance"
 import type { Tag } from "@/types/Tag"
@@ -219,7 +219,6 @@ const FileTagModal = ({ isOpen, onClose, file }: FileTagModalProps) => {
   const [newTagName, setNewTagName] = useState("")
   const [popularTags, setPopularTags] = useState<Tag[]>([])
   const [isLoading, setIsLoading] = useState(false)
-  const [isRefreshing, setIsRefreshing] = useState(false)
 
   useEffect(() => {
     fetchPopularTags()
@@ -289,20 +288,6 @@ const FileTagModal = ({ isOpen, onClose, file }: FileTagModalProps) => {
     }
   }
 
-  const handleRefreshAITags = async () => {
-    try {
-      setIsRefreshing(true)
-      const response = await axiosInstance.post<Tag[]>(`/api/file/${file.id}/regenerate-tags`)
-      setTags(response.data)
-      toast.success("Tags refreshed with AI")
-    } catch (error) {
-      console.error("Error refreshing AI tags:", error)
-      toast.error("Failed to refresh tags")
-    } finally {
-      setIsRefreshing(false)
-    }
-  }
-
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="bg-white border-0 shadow-xl max-w-md">
@@ -332,10 +317,6 @@ const FileTagModal = ({ isOpen, onClose, file }: FileTagModalProps) => {
           <div>
             <div className="flex justify-between items-center mb-2">
               <h3 className="text-sm font-medium text-gray-700">Current Tags</h3>
-              <Button variant="outline" size="sm" onClick={handleRefreshAITags} disabled={isRefreshing} className="h-8">
-                <RefreshCw className={`h-3 w-3 mr-1 ${isRefreshing ? "animate-spin" : ""}`} />
-                Refresh with AI
-              </Button>
             </div>
 
             <div className="flex flex-wrap gap-2 p-3 bg-gray-50 rounded-md min-h-[80px]">

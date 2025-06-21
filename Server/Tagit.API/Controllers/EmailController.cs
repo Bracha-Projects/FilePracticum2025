@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Tagit.Core.Models;
 using Tagit.Core.Services;
 
@@ -15,6 +16,7 @@ namespace Tagit.API.Controllers
             _emailService = emailService;
         }
 
+        [Authorize]
         [HttpPost("send")]
         public async Task<IActionResult> SendEmailAsync([FromBody] EmailRequest request)
         {

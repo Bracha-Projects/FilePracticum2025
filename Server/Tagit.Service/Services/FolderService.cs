@@ -66,6 +66,12 @@ namespace Tagit.Service.Services
 
         public async Task SoftDeleteFolderAsync(int folderId)
         {
+            List<FileDTO> files = await GetFilesInFolderAsync(folderId);
+            foreach (var file in files)
+            {
+                file.IsDeleted = true;
+                await _fileRepository.UpdateFileAsync(_mapper.Map<File>(file));
+            }
             await _folderRepository.SoftDeleteFolderAsync(folderId);
         }
 
