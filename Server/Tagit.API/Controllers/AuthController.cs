@@ -57,13 +57,10 @@ namespace Tagit.API.Controllers
                 Subject = "Reset your password",
                 Body = $"Please reset your password by clicking the following link: {link}"
             };
+            if (link != null)
+               await _emailService.SendEmailAsync(emailRequest);
 
-            bool emailSent = await _emailService.SendEmailAsync(emailRequest);
-
-            if (emailSent)
-                return Ok(new { message = "Reset link sent to your email." });
-            else
-                return Ok(new { resetLink = link }); 
+            return Ok(new { message = "If the email exists, a reset link was sent." });
         }
 
         [HttpPost("reset-password")]

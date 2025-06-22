@@ -11,12 +11,17 @@ namespace Tagit.Service.Services
     public class AuthService: IAuthService
     {
         private readonly IAuthRepository _repository;
-        public AuthService(IAuthRepository authRepository)
+        private readonly IUserService _userService; 
+        public AuthService(IAuthRepository authRepository, IUserService userService)
         {
             _repository = authRepository;
+            _userService = userService;
         }
         public async Task<string> RequestPasswordResetAsync(string email)
         {
+            var user = await _userService.GetUserByEmail(email);
+            if (user == null)
+                return null;
             var token = await _repository.CreatePasswordResetTokenAsync(email);
             return $"https://tag-it-client.onrender.com/reset-password?token={token.Token}";
         }
