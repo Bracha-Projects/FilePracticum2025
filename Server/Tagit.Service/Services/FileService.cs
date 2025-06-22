@@ -94,6 +94,7 @@ namespace Tagit.Service.Services
         public async Task<FileDTO> AddFileAsync(FileDTO file)
         {
             file.DateCreated = DateTime.UtcNow; 
+            file.LastModified = DateTime.UtcNow;
             var uploadedFile = await _fileRepository.AddFileAsync(_mapper.Map<File>(file));
             return _mapper.Map<FileDTO>(uploadedFile);
         }
@@ -105,6 +106,7 @@ namespace Tagit.Service.Services
 
         public async Task<FileDTO> UpdateFileAsync(FileDTO file)
         {
+            file.LastModified = DateTime.UtcNow;
             var updatedFile = await _fileRepository.UpdateFileAsync(_mapper.Map<File>(file));
             return _mapper.Map<FileDTO>(updatedFile);
         }

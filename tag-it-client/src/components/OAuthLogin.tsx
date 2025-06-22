@@ -24,14 +24,19 @@ const OAuthLogin: React.FC<OAuthLoginProps> = ({ onSuccess }) => {
     setIsLoading(true)
     try {
       const result = await signInWithPopup(auth, provider)
-      const googleToken = await result.user.getIdToken() 
-
+      const googleToken = await result.user.getIdToken()
       if (googleToken) {
         await handleOAuthLogin("Google", googleToken)
       }
-    } catch (error) {
-      console.error("Google login failed:", error)
-      toast.error("Google login failed")
+    } catch (error: any) {
+      console.error("Google login failed:", error);
+      debugger
+      if (error.code) console.error("Error code:", error.code);
+      if (error.message) console.error("Error message:", error.message);
+      if (error.customData) console.error("Custom data:", error.customData);
+      if (error.name) console.error("Error name:", error.name);
+
+      toast.error(`Google login failed: ${error.message || "Unknown error"}`);
     } finally {
       setIsLoading(false)
     }

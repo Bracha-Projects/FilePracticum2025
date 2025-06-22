@@ -17,17 +17,17 @@ namespace Tagit.Core.Entities
         [MaxLength(255)]
         public string Email { get; set; }
         [MaxLength(255)]
-        public string PasswordHash { get; set; }
+        public string? PasswordHash { get; set; }
         public RoleType Role { get; set; }
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime CreatedAt { get; set; } 
+        public DateTime UpdatedAt { get; set; } 
         public bool IsActive { get; set; } 
         [MaxLength(255)]
         public string? ProfileImageUrl { get; set; } 
         public DateTime? LastLoginAt { get; set; }
         public int RootFolderId { get; set; }
-        public string Provider { get; set; } 
-        public string ProviderId { get; set; } 
+        public string? Provider { get; set; } 
+        public string? ProviderId { get; set; } 
 
 
         public List<File> Files { get; set; }

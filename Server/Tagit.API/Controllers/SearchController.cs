@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Tagit.API.Extensions;
 using Tagit.Core.Entities;
 using Tagit.Core.Models;
@@ -18,7 +19,7 @@ namespace Tagit.API.Controllers
             _searchService = searchService;
             _activityService = activityService;
         }
-
+        [Authorize]
         [HttpGet("files")]
         public async Task<IActionResult> SearchFiles([FromQuery] FileSearchModel searchModel)
         {

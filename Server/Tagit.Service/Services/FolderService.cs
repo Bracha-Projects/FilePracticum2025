@@ -29,7 +29,8 @@ namespace Tagit.Service.Services
         public async Task<FolderDTO> AddFolderAsync(FolderDTO folder)
         {
             var folderToAdd = _mapper.Map<Folder>(folder);
-            folder.CreatedAt = DateTime.UtcNow; 
+            folderToAdd.CreatedAt = DateTime.UtcNow; 
+            folderToAdd.UpdatedAt = DateTime.UtcNow;
             return _mapper.Map<FolderDTO>(await _folderRepository.AddFolderAsync(folderToAdd));
         }
 
@@ -55,8 +56,13 @@ namespace Tagit.Service.Services
 
             if(existingFolder.OwnerId != updatedData.OwnerId)
                 throw new UnauthorizedAccessException("You do not have permission to update this folder");
-
+            var originalId = existingFolder.Id;
+            var createdAt = existingFolder.CreatedAt; 
             _mapper.Map(updatedData, existingFolder);
+
+            existingFolder.Id = originalId;
+            existingFolder.UpdatedAt = DateTime.UtcNow;
+            existingFolder.CreatedAt = createdAt; 
 
             await _folderRepository.UpdateFolderAsync(existingFolder);
 

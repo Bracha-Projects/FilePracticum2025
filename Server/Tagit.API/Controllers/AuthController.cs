@@ -27,7 +27,6 @@ namespace Tagit.API.Controllers
             _emailService = emailService;
         }
 
-        [Authorize]
         [HttpPost("oauth-login")]
         public async Task<IActionResult> OAuthLogin([FromBody] OAuthLoginRequest request)
         {

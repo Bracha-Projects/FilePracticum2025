@@ -46,19 +46,25 @@ namespace Tagit.Data.Repositories
         public async Task<List<File>> SearchFilesAsync(FileSearchModel model)
         {
             var query = _context.Files
-                .Include(f => f.FileTags)
+                .Include(f => f.FileTags) 
                 .Where(f => f.OwnerId == model.OwnerId && !f.IsDeleted);
 
-            if (model.Tags != null && model.Tags.Any())
+            // סינון לפי מזהי תגיות
+            if (model.TagsIds != null && model.TagsIds.Any())
             {
                 query = query.Where(f =>
-                    model.Tags.All(tag => f.FileTags.Any(t => t.TagName == tag))
+                    model.TagsIds.All(tagId => f.FileTags.Any(t => t.Id == tagId))
                 );
             }
 
+            // סינון לפי שם קובץ או שם תגית
             if (!string.IsNullOrEmpty(model.FileNameContains))
             {
-                query = query.Where(f => f.FileName.Contains(model.FileNameContains));
+                var term = model.FileNameContains.ToLower();
+                query = query.Where(f =>
+                    f.FileName.ToLower().Contains(term) ||
+                    f.FileTags.Any(t => t.TagName.ToLower().Contains(term))
+                );
             }
 
             if (model.FromDate.HasValue)
@@ -74,11 +80,14 @@ namespace Tagit.Data.Repositories
             if (model.FolderId.HasValue)
             {
                 var folderIds = await GetDescendantFolderIdsAsync(model.FolderId.Value);
+                folderIds.Add(model.FolderId.Value); 
                 query = query.Where(f => folderIds.Contains(f.FolderId));
             }
 
             return await query.ToListAsync();
         }
+
+
 
 
     }

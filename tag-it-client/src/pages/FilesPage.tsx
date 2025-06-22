@@ -53,6 +53,7 @@ import { toast } from "sonner"
 import type { FileItem } from "@/types/FileItem"
 import type { Tag as TagDTO } from "@/types/Tag"
 import axiosInstance from "@/utils/axiosInstance"
+import qs from "qs"
 import {
   createFolder,
   deleteFile,
@@ -73,10 +74,11 @@ type SortOption = "name-asc" | "name-desc" | "date-asc" | "date-desc" | "type-as
 
 interface FileSearchModel {
   ownerId: number
-  tagIds?: number[]
+  tagsIds?: number[]
   fromDate?: string
   toDate?: string
-  fileNameContains?: string
+  fileNameContains?: string,
+  folderId?: number
 }
 
 const FilesPage = () => {
@@ -159,8 +161,9 @@ const FilesPage = () => {
       if (searchQuery) {
         searchParams.fileNameContains = searchQuery
       }
+      debugger
       if (selectedTags.length > 0) {
-        searchParams.tagIds = selectedTags.map((tag) => tag.id)
+        searchParams.tagsIds = selectedTags.map((tag) => tag.id)
       }
       if (fromDate) {
         searchParams.fromDate = fromDate
@@ -168,10 +171,14 @@ const FilesPage = () => {
       if (toDate) {
         searchParams.toDate = toDate
       }
+      if (currentFolderId) {
+        searchParams.folderId = currentFolderId
+      }
 
-      const response = await axiosInstance.get<FileItem[]>("/api/files/search", {
+      const response = await axiosInstance.get<FileItem[]>('/api/Search/files', {
         params: searchParams,
-      })
+        paramsSerializer: params => qs.stringify(params, { arrayFormat: 'repeat' })
+      });
 
       setSearchResults(response.data)
     } catch (error) {
@@ -266,9 +273,14 @@ const FilesPage = () => {
   }, [displayFiles, activeTab, sortOption])
 
   const toggleTag = (tag: TagDTO) => {
-    setSelectedTags((prev) =>
-      prev.some((t) => t.id === tag.id) ? prev.filter((t) => t.id !== tag.id) : [...prev, tag],
-    )
+    console.log("Current selected tags:", selectedTags)
+    setSelectedTags((prev) => {
+      const newTags = prev.some((t) => t.id === tag.id) ? prev.filter((t) => t.id !== tag.id) : [...prev, tag];
+      console.log("Updated tags inside setState:", newTags);
+      return newTags;
+    });
+    console.log("Toggled tag:", tag)
+    console.log("Current selected tags:", selectedTags)
   }
 
   const getFileIcon = (type: string) => {
@@ -331,27 +343,6 @@ const FilesPage = () => {
     setCurrentFile(file)
     setIsTagModalOpen(true)
   }
-
-  // const handleTagsUpdate = (updatedTags: TagDTO[]) => {
-  //   if (!currentFile) return
-
-   
-  //   if (searchResults.length > 0) {
-  //     const updatedSearchResults = searchResults.map((file) => {
-  //       if (file.id === currentFile.id) {
-  //         return { ...file, tags: updatedTags }
-  //       }
-  //       return file
-  //     })
-  //     setSearchResults(updatedSearchResults)
-  //   }
-
-  //   if (currentFolderId) {
-  //     dispatch(fetchFolderContents(currentFolderId))
-  //   }
-
-  //   toast.success("Tags updated successfully")
-  // }
 
   const handleRefresh = () => {
     if (searchResults.length > 0) {
@@ -568,7 +559,7 @@ const FilesPage = () => {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
-                placeholder="Search files by name or content..."
+                placeholder="Search files by name or tag..."
                 className="pl-9"
                 style={{
                   borderColor: "#e2e8f0",
