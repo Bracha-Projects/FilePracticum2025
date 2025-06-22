@@ -92,6 +92,8 @@ const LoginPage = () => {
       }
     } finally {
       setIsLoading(false);
+      setEmail("");
+      setPassword("");
     }
   }
  const handleOAuthSuccess = () => {
